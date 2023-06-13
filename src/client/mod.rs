@@ -54,7 +54,7 @@ impl Ordr {
     }
 
     /// Disconnects the websocket. This should be called before dropping the [`Ordr`].
-    pub async fn disconnect(self) -> Result<(), Error> {
+    pub async fn disconnect(&self) -> Result<(), Error> {
         if let Some(ref socket) = self.inner.socket {
             socket.disconnect().await.map_err(Error::from)?;
         }
