@@ -19,7 +19,10 @@ use crate::model::SkinDeleted;
 #[derive(Debug, ThisError)]
 pub enum Error {
     #[error("Failed to build the request")]
-    BuildingRequest { source: Box<dyn StdError> },
+    BuildingRequest {
+        #[source]
+        source: Box<dyn StdError + Send + Sync + 'static>,
+    },
     #[error("Failed to chunk the response")]
     ChunkingResponse {
         #[source]
