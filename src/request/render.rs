@@ -72,7 +72,7 @@ impl IntoFuture for &mut SendRender<'_> {
 
         match self.replay_source {
             ReplaySource::File(bytes) => form.push_replay("replayFile", bytes),
-            ReplaySource::Url(url) => form.push_text("replayUrl", url),
+            ReplaySource::Url(url) => form.push_text("replayURL", url),
         };
 
         form.push_text("username", self.username);
