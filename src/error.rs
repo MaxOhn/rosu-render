@@ -7,7 +7,7 @@ use std::{
 use hyper::{body::Bytes, Body, Error as HyperError, Response};
 use rust_socketio::Error as SocketIoError;
 use serde::{
-    de::{Deserializer, Error as DeError, Visitor},
+    de::{Deserializer, Error as DeError, Unexpected, Visitor},
     Deserialize,
 };
 use serde_json::Error as JsonError;
@@ -206,6 +206,14 @@ impl<'de> Deserialize<'de> for ErrorCode {
                 };
 
                 Ok(code)
+            }
+
+            fn visit_u64<E: DeError>(self, v: u64) -> Result<Self::Value, E> {
+                let code = u8::try_from(v).map_err(|_| {
+                    DeError::invalid_value(Unexpected::Unsigned(v), &"a valid error code")
+                })?;
+
+                self.visit_u8(code)
             }
         }
 

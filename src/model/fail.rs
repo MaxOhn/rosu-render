@@ -12,5 +12,5 @@ pub struct RenderFail {
     /// The error code as specified by o!rdr.
     pub error_code: ErrorCode,
     /// An error message.
-    pub error_msg: Box<str>,
+    pub error_message: Box<str>,
 }
