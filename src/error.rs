@@ -88,12 +88,12 @@ impl From<Bytes> for StringOrBytes {
 #[derive(Debug, Deserialize)]
 pub struct ApiError {
     /// The response of the server.
-    message: Box<str>,
+    pub message: Box<str>,
     /// The reason of the ban (if provided by admins).
-    reason: Option<Box<str>>,
+    pub reason: Option<Box<str>>,
     /// The error code of the creation of this render.
     #[serde(rename = "errorCode")]
-    error_code: u32,
+    pub error_code: u32,
 }
 
 impl Display for ApiError {
