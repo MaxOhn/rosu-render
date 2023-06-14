@@ -41,6 +41,7 @@ const WS_URL: &str = "https://ordr-ws.issou.best";
 pub struct OrdrBuilder {
     socket_builder: SocketBuilder,
     verification: Option<Verification>,
+    ratelimit: Option<RatelimitBuilder>,
     with_socket: Option<bool>,
 }
 
@@ -50,6 +51,7 @@ impl OrdrBuilder {
         Self {
             socket_builder: SocketBuilder::new(WS_URL),
             verification: None,
+            ratelimit: None,
             with_socket: None,
         }
     }
@@ -69,11 +71,37 @@ impl OrdrBuilder {
             None
         };
 
+        let ratelimit = match (self.verification.as_ref(), self.ratelimit) {
+            (None, None) => RatelimitBuilder::new(300_000, 1, 1), // One per 5 minutes
+            (None, Some(ratelimit)) => {
+                let ms_per_gain = ratelimit.interval / ratelimit.refill;
+
+                if ms_per_gain < 300_000 {
+                    RatelimitBuilder::new(300_000, 1, 1)
+                } else {
+                    RatelimitBuilder {
+                        max: ratelimit.max.min(2),
+                        ..ratelimit
+                    }
+                }
+            }
+            (Some(Verification::Key(_)), None) => todo!(),
+            (
+                Some(
+                    Verification::DevModeSuccess
+                    | Verification::DevModeFail
+                    | Verification::DevModeWsFail,
+                ),
+                None,
+            ) => RatelimitBuilder::new(1000, 1, 1), // One per 2 seconds
+            (Some(_), Some(ratelimit)) => ratelimit,
+        };
+
         Ok(Ordr {
             inner: Arc::new(OrdrRef {
                 http,
                 socket,
-                ratelimiter: Ratelimiter::new(),
+                ratelimiter: Ratelimiter::new(ratelimit),
                 verification: self.verification,
                 banned: Arc::new(AtomicBool::new(false)),
             }),
@@ -86,6 +114,27 @@ impl OrdrBuilder {
     pub fn verification(self, verification: Verification) -> Self {
         Self {
             verification: Some(verification),
+            ..self
+        }
+    }
+
+    /// Specify a ratelimit that the client will uphold for the render endpoint.
+    /// Other endpoints won't be affected, they have a pre-set ratelimit.
+    ///
+    /// - `interval_ms`: How many milliseconds until the next refill
+    /// - `refill`: How many allowances are added per refill
+    /// - `max`: What's the maximum amount of available allowances
+    ///
+    /// If no [`Verification`] is specified, the ratelimit will be clamped up to one
+    /// per 5 minutes as per o!rdr rules.
+    /// If a dev mode [`Verification`] is specified, the ratelimit defaults to one per second.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `interval_ms` or `refill` are zero.
+    pub fn render_ratelimit(self, interval_ms: u64, refill: u64, max: u64) -> Self {
+        Self {
+            ratelimit: Some(RatelimitBuilder::new(interval_ms, refill, max)),
             ..self
         }
     }
@@ -136,6 +185,22 @@ impl OrdrBuilder {
         Self {
             socket_builder: self.socket_builder.on("render_failed_json", f),
             ..self
+        }
+    }
+}
+
+pub(super) struct RatelimitBuilder {
+    pub interval: u64,
+    pub refill: u64,
+    pub max: u64,
+}
+
+impl RatelimitBuilder {
+    fn new(interval: u64, refill: u64, max: u64) -> Self {
+        Self {
+            interval,
+            refill,
+            max,
         }
     }
 }

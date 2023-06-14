@@ -2,6 +2,8 @@ use std::{sync::Arc, time::Duration};
 
 use leaky_bucket::RateLimiter;
 
+use super::builder::RatelimitBuilder;
+
 pub(super) struct Ratelimiter {
     pub(super) general: Arc<RateLimiter>,
     pub(super) send_render: Arc<RateLimiter>,
@@ -13,7 +15,15 @@ pub(crate) enum RatelimiterKind {
 }
 
 impl Ratelimiter {
-    pub fn new() -> Self {
+    pub fn new(builder: RatelimitBuilder) -> Self {
+        let RatelimitBuilder {
+            interval,
+            refill,
+            max,
+        } = builder;
+
+        info!("o!rdr ratelimit: Refill {refill} every {interval}ms, up to {max}");
+
         Self {
             general: Arc::new(
                 // 10 per minute
@@ -25,12 +35,11 @@ impl Ratelimiter {
                     .build(),
             ),
             send_render: Arc::new(
-                // 1 per 5 minutes
                 RateLimiter::builder()
-                    .max(1)
-                    .initial(1)
-                    .refill(1)
-                    .interval(Duration::from_secs(300))
+                    .max(max as usize)
+                    .initial(max as usize)
+                    .refill(refill as usize)
+                    .interval(Duration::from_millis(interval))
                     .build(),
             ),
         }
