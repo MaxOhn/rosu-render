@@ -93,7 +93,7 @@ pub struct ApiError {
     pub reason: Option<Box<str>>,
     /// The error code of the creation of this render.
     #[serde(rename = "errorCode")]
-    pub error_code: u32,
+    pub code: ErrorCode,
 }
 
 impl Display for ApiError {
@@ -101,7 +101,7 @@ impl Display for ApiError {
         write!(
             f,
             "Error code {code}: {msg}",
-            code = self.error_code,
+            code = self.code,
             msg = self.message
         )?;
 
