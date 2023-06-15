@@ -111,7 +111,7 @@ mod tests {
     fn empty() {
         let form = Form::new();
 
-        let expect = format!("--{}--\r\n", str_from_utf8(&form.boundary).unwrap());
+        let expect = format!("--{}--", str_from_utf8(&form.boundary).unwrap());
 
         let form = String::from_utf8(form.build()).unwrap();
 
@@ -137,8 +137,8 @@ mod tests {
             Content-Disposition: form-data; name=\"key2\"\r\n\
             \r\n\
             value2\r\n\
-            --{boundary}--\r\n\
-            Content-Disposition: form-data; name=\"key3\"; filename=\"replay.osz\"\r\n\
+            --{boundary}\r\n\
+            Content-Disposition: form-data; name=\"key3\"; filename=\"replay.osr\"\r\n\
             \r\n\
             replay data\r\n\
             --{boundary}--"
