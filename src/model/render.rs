@@ -81,12 +81,16 @@ pub struct RenderCreated {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize)]
 pub enum RenderResolution {
     /// 720x480 (30fps)
+    #[serde(rename = "720x480")]
     SD480,
     /// 960x540 (30fps)
+    #[serde(rename = "960x540")]
     SD960,
     /// 1280x720 (60fps)
+    #[serde(rename = "1280x720")]
     HD720,
     /// 1920x1080 (60fps)
+    #[serde(rename = "1920x1080")]
     HD1080,
 }
 

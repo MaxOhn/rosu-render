@@ -150,9 +150,9 @@ impl Serializer for &mut FormSerializer {
         self,
         _: &'static str,
         _: u32,
-        _: &'static str,
+        variant: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        unimplemented!()
+        self.serialize_str(variant)
     }
 
     fn serialize_newtype_struct<T: Serialize + ?Sized>(
@@ -264,5 +264,17 @@ impl StdError for Infallible {
 impl Display for Infallible {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         <Self as Debug>::fmt(self, f)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::model::RenderOptions;
+
+    use super::*;
+
+    #[test]
+    fn test_form_serializer() {
+        let _form = Form::serialize(&RenderOptions::default());
     }
 }

@@ -27,6 +27,9 @@ thiserror = { version = "1.0" }
 time = { version = "0.3", features = ["formatting", "parsing"] }
 tracing = { version = "0.1", default-features = false, features = ["std", "attributes"] }
 
+[dev-dependencies]
+tokio = { version = "1.0", default-features = false, features = ["fs", "macros", "sync"] }
+
 [features]
 default = ["rustls-webpki-roots"]
 native = ["dep:hyper-tls"]
