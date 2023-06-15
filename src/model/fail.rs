@@ -10,7 +10,7 @@ pub struct RenderFail {
     #[serde(rename = "renderID")]
     pub render_id: u32,
     /// The error code as specified by o!rdr.
-    pub error_code: ErrorCode,
+    pub error_code: Option<ErrorCode>,
     /// An error message.
     pub error_message: Box<str>,
 }
