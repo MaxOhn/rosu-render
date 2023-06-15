@@ -76,7 +76,7 @@ impl IntoFuture for &mut SendRender<'_> {
         };
 
         form.push_text("username", self.username);
-        form.push_text("skin", self.skin.skin_name);
+        form.push_text("skin", self.skin.skin_name.as_ref());
 
         let is_custom = if self.skin.is_custom { "true" } else { "false" };
         form.push_text("customSkin", is_custom);

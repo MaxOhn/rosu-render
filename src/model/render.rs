@@ -1,4 +1,7 @@
-use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::{
+    borrow::Cow,
+    fmt::{Display, Formatter, Result as FmtResult},
+};
 
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -254,14 +257,14 @@ impl Default for RenderOptions {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RenderSkinOption<'a> {
-    pub skin_name: &'a str,
+    pub skin_name: Cow<'a, str>,
     pub is_custom: bool,
 }
 
 impl<'a> RenderSkinOption<'a> {
-    pub fn new(skin_name: &'a str, is_custom: bool) -> Self {
+    pub fn new(skin_name: impl Into<Cow<'a, str>>, is_custom: bool) -> Self {
         Self {
-            skin_name,
+            skin_name: skin_name.into(),
             is_custom,
         }
     }
