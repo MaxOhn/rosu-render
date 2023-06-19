@@ -85,7 +85,7 @@ impl OrdrBuilder {
                     }
                 }
             }
-            (Some(Verification::Key(_)), None) => todo!(),
+            (Some(Verification::Key(_)), None) => RatelimitBuilder::new(10_000, 1, 1), // One per 10 seconds
             (
                 Some(
                     Verification::DevModeSuccess
@@ -93,7 +93,7 @@ impl OrdrBuilder {
                     | Verification::DevModeWsFail,
                 ),
                 None,
-            ) => RatelimitBuilder::new(1000, 1, 1), // One per 2 seconds
+            ) => RatelimitBuilder::new(1000, 1, 1), // One per second
             (Some(_), Some(ratelimit)) => ratelimit,
         };
 
@@ -128,10 +128,29 @@ impl OrdrBuilder {
     /// If no [`Verification`] is specified, the ratelimit will be clamped up to one
     /// per 5 minutes as per o!rdr rules.
     /// If a dev mode [`Verification`] is specified, the ratelimit defaults to one per second.
+    /// If a verification key is specified, the ratelimit defaults to one per 10 seconds.
     ///
     /// # Panics
     ///
     /// Panics if `interval_ms` or `refill` are zero.
+    ///
+    /// # Example
+    /// ```
+    /// use rosu_render::Ordr;
+    /// # use tokio::runtime::Runtime;
+    /// # let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
+    /// # let _ = rt.block_on(async {
+    ///
+    /// // Applying a ratelimit of 1 refill every 5 seconds, up to 2 charges
+    /// // which means 2 requests per 10 seconds.
+    /// let ordr = Ordr::builder()
+    ///     .render_ratelimit(5000, 1, 2)
+    /// #   .with_websocket(false)
+    ///     .build()
+    ///     .await?;
+    /// # Ok::<_, rosu_render::Error>(())
+    /// # });
+    /// ```
     pub fn render_ratelimit(self, interval_ms: u64, refill: u64, max: u64) -> Self {
         Self {
             ratelimit: Some(RatelimitBuilder::new(interval_ms, refill, max)),
