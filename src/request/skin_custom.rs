@@ -2,7 +2,7 @@ use std::future::IntoFuture;
 
 use serde::Serialize;
 
-use crate::{error::Error, model::SkinList, request::Request, routing::Route, Ordr};
+use crate::{error::Error, model::SkinInfo, request::Request, routing::Route, Ordr};
 
 use super::OrdrFuture;
 
@@ -27,8 +27,8 @@ impl<'a> GetSkinCustom<'a> {
 }
 
 impl IntoFuture for &mut GetSkinCustom<'_> {
-    type Output = Result<SkinList, Error>;
-    type IntoFuture = OrdrFuture<SkinList>;
+    type Output = Result<SkinInfo, Error>;
+    type IntoFuture = OrdrFuture<SkinInfo>;
 
     fn into_future(self) -> Self::IntoFuture {
         match Request::builder(Route::SkinCustom).query(&self.fields) {
@@ -39,8 +39,8 @@ impl IntoFuture for &mut GetSkinCustom<'_> {
 }
 
 impl IntoFuture for GetSkinCustom<'_> {
-    type Output = Result<SkinList, Error>;
-    type IntoFuture = OrdrFuture<SkinList>;
+    type Output = Result<SkinInfo, Error>;
+    type IntoFuture = OrdrFuture<SkinInfo>;
 
     fn into_future(mut self) -> Self::IntoFuture {
         (&mut self).into_future()

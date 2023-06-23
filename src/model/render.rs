@@ -3,10 +3,11 @@ use std::{
     fmt::{Display, Formatter, Result as FmtResult},
 };
 
+use hyper::{body::Bytes, StatusCode};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use crate::util::datetime::deserialize_datetime;
+use crate::{request::Requestable, util::datetime::deserialize_datetime, Error};
 
 /// A list of [`Render`].
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -17,6 +18,12 @@ pub struct RenderList {
     /// but if search query the total numbers of renders corresponding to that query will be used.
     #[serde(rename = "maxRenders")]
     pub max_renders: u32,
+}
+
+impl Requestable for RenderList {
+    fn response_error(status: StatusCode, bytes: Bytes) -> Error {
+        Error::response_error(bytes, status.as_u16())
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -76,6 +83,12 @@ pub struct RenderCreated {
     /// The render ID of your render that got created.
     #[serde(rename = "renderID")]
     pub render_id: u32,
+}
+
+impl Requestable for RenderCreated {
+    fn response_error(status: StatusCode, bytes: Bytes) -> Error {
+        Error::response_error(bytes, status.as_u16())
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize)]
@@ -238,12 +251,12 @@ impl Default for RenderOptions {
             slider_merge: false,
             objects_rainbow: false,
             flash_objects: false,
-            use_slider_hitcircle_color: true,
+            use_slider_hitcircle_color: false,
             seizure_warning: false,
-            load_storyboard: true,
-            load_video: true,
+            load_storyboard: false,
+            load_video: false,
             intro_bg_dim: 0,
-            ingame_bg_dim: 75,
+            ingame_bg_dim: 80,
             break_bg_dim: 30,
             bg_parallax: false,
             show_danser_logo: true,
@@ -251,7 +264,7 @@ impl Default for RenderOptions {
             cursor_ripples: false,
             slider_snaking_in: true,
             slider_snaking_out: true,
-            show_hit_counter: false,
+            show_hit_counter: true,
             show_avatars_on_scoreboard: false,
             show_aim_error_meter: false,
             play_nightcore_samples: true,
@@ -260,23 +273,48 @@ impl Default for RenderOptions {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RenderSkinOption<'a> {
-    pub skin_name: Cow<'a, str>,
-    pub is_custom: bool,
+pub enum RenderSkinOption<'a> {
+    Official { name: Cow<'a, str> },
+    Custom { id: u32 },
 }
 
-impl<'a> RenderSkinOption<'a> {
-    pub fn new(skin_name: impl Into<Cow<'a, str>>, is_custom: bool) -> Self {
-        Self {
-            skin_name: skin_name.into(),
-            is_custom,
+impl<'a> Default for RenderSkinOption<'a> {
+    fn default() -> Self {
+        Self::Official {
+            name: "default".into(),
         }
     }
 }
 
+impl<'a> From<u32> for RenderSkinOption<'a> {
+    fn from(id: u32) -> Self {
+        Self::Custom { id }
+    }
+}
+
+macro_rules! impl_from_name {
+    ( $( $ty:ty ),* ) => {
+        $(
+            impl<'a> From<$ty> for RenderSkinOption<'a> {
+                fn from(name: $ty) -> Self {
+                    Self::Official { name: name.into() }
+                }
+            }
+        )*
+    };
+}
+
+impl_from_name!(&'a str, &'a String, String, Cow<'a, str>);
+
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct RenderServers {
     pub servers: Vec<RenderServer>,
+}
+
+impl Requestable for RenderServers {
+    fn response_error(status: StatusCode, bytes: Bytes) -> Error {
+        Error::response_error(bytes, status.as_u16())
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
@@ -325,4 +363,13 @@ pub struct RenderServerOptions {
     pub text_color: Box<str>,
     #[serde(rename = "backgroundType")]
     pub background_type: i32,
+}
+
+#[derive(Copy, Clone, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ServerOnlineCount(pub u32);
+
+impl Requestable for ServerOnlineCount {
+    fn response_error(status: StatusCode, bytes: Bytes) -> Error {
+        Error::response_error(bytes, status.as_u16())
+    }
 }

@@ -12,7 +12,7 @@ pub use self::{
     progress::RenderProgress,
     render::{
         Render, RenderCreated, RenderList, RenderOptions, RenderResolution, RenderServer,
-        RenderServers, RenderSkinOption,
+        RenderServers, RenderSkinOption, ServerOnlineCount,
     },
     skin_custom::{SkinDeleted, SkinInfo},
     skin_list::{Skin, SkinList},

@@ -20,6 +20,8 @@ use serde::de::DeserializeOwned;
 
 use crate::error::Error;
 
+use super::requestable::Requestable;
+
 #[pin_project(project = OrdrFutureProj)]
 pub struct OrdrFuture<T> {
     #[pin]
@@ -66,7 +68,7 @@ impl<T> OrdrFuture<T> {
     }
 }
 
-impl<T: DeserializeOwned> Future for OrdrFuture<T> {
+impl<T: DeserializeOwned + Requestable> Future for OrdrFuture<T> {
     type Output = Result<T, Error>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -125,17 +127,11 @@ enum OrdrFutureState<T> {
 struct Chunking<T> {
     #[pin]
     fut: Pin<Box<dyn Future<Output = Result<Bytes, Error>> + Send + Sync + 'static>>,
-    kind: ChunkingKind,
+    status: StatusCode,
     phantom: PhantomData<T>,
 }
 
-enum ChunkingKind {
-    Value,
-    ResponseError { status: u16 },
-    NotFoundError,
-}
-
-impl<T: DeserializeOwned> Future for Chunking<T> {
+impl<T: DeserializeOwned + Requestable> Future for Chunking<T> {
     type Output = Result<T, Error>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -147,32 +143,16 @@ impl<T: DeserializeOwned> Future for Chunking<T> {
             Poll::Pending => return Poll::Pending,
         };
 
-        let res = match this.kind {
-            ChunkingKind::Value => match serde_json::from_slice(&bytes) {
-                Ok(value) => Ok(value),
+        let res = if this.status.is_success() {
+            match serde_json::from_slice(&bytes) {
+                Ok(this) => Ok(this),
                 Err(source) => Err(Error::Parsing {
                     body: bytes.into(),
                     source,
                 }),
-            },
-            ChunkingKind::ResponseError { status } => match serde_json::from_slice(&bytes) {
-                Ok(error) => Err(Error::Response {
-                    body: bytes,
-                    error,
-                    status_code: *status,
-                }),
-                Err(source) => Err(Error::Parsing {
-                    body: bytes.into(),
-                    source,
-                }),
-            },
-            ChunkingKind::NotFoundError => match serde_json::from_slice(&bytes) {
-                Ok(error) => Err(Error::SkinDeleted { error }),
-                Err(source) => Err(Error::Parsing {
-                    body: bytes.into(),
-                    source,
-                }),
-            },
+            }
+        } else {
+            Err(<T as Requestable>::response_error(*this.status, bytes))
         };
 
         Poll::Ready(res)
@@ -187,7 +167,7 @@ struct InFlight<T> {
     phantom: PhantomData<T>,
 }
 
-impl<T> Future for InFlight<T> {
+impl<T: Requestable> Future for InFlight<T> {
     type Output = Result<Chunking<T>, Error>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -201,31 +181,16 @@ impl<T> Future for InFlight<T> {
 
         let status = response.status();
 
-        let kind = match status {
-            _ if status.is_success() => ChunkingKind::Value,
-            StatusCode::TOO_MANY_REQUESTS => {
-                warn!("429 response: {response:?}");
-
-                ChunkingKind::ResponseError {
-                    status: status.as_u16(),
-                }
-            }
-            StatusCode::UNAUTHORIZED => {
-                this.banned.store(true, Ordering::Relaxed);
-
-                ChunkingKind::ResponseError {
-                    status: status.as_u16(),
-                }
-            }
-            StatusCode::NOT_FOUND => ChunkingKind::NotFoundError,
+        match status {
+            StatusCode::TOO_MANY_REQUESTS => warn!("429 response: {response:?}"),
+            StatusCode::UNAUTHORIZED => this.banned.store(true, Ordering::Relaxed),
             StatusCode::SERVICE_UNAVAILABLE => {
                 return Poll::Ready(Err(Error::ServiceUnavailable { response }))
             }
-            _ => ChunkingKind::ResponseError {
-                status: status.as_u16(),
-            },
+            _ => {}
         };
 
+        // body::to_bytes returns an anonymous future so we need to Box::pin it
         let fut = async {
             let body = response.into_body();
 
@@ -236,7 +201,7 @@ impl<T> Future for InFlight<T> {
 
         Poll::Ready(Ok(Chunking {
             fut: Box::pin(fut),
-            kind,
+            status,
             phantom: PhantomData,
         }))
     }

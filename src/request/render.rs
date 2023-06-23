@@ -76,10 +76,17 @@ impl IntoFuture for &mut SendRender<'_> {
         };
 
         form.push_text("username", self.username);
-        form.push_text("skin", self.skin.skin_name.as_ref());
 
-        let is_custom = if self.skin.is_custom { "true" } else { "false" };
-        form.push_text("customSkin", is_custom);
+        match self.skin {
+            RenderSkinOption::Official { name } => {
+                form.push_text("skin", name.as_ref())
+                    .push_text("customSkin", "false");
+            }
+            RenderSkinOption::Custom { id } => {
+                form.push_text("skin", id.to_string())
+                    .push_text("customSkin", "true");
+            }
+        }
 
         if let Some(verification) = self.ordr.verification() {
             form.push_text("verificationKey", verification.as_str());

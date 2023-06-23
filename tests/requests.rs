@@ -120,7 +120,7 @@ async fn test_render_success() {
         .await
         .unwrap();
 
-    let skin = RenderSkinOption::new("Danser default skin (Redd glass)", true);
+    let skin = RenderSkinOption::default();
     let settings = RenderOptions::default();
 
     let builder = Ordr::builder()
@@ -149,7 +149,16 @@ async fn test_render_success() {
         }
     };
 
-    let timeout_res = tokio::time::timeout(Duration::from_secs(45), await_done).await;
+    let timeout_res = tokio::time::timeout(Duration::from_secs(60), await_done).await;
     ordr.unsubscribe_render_id(render_created.render_id).await;
     timeout_res.unwrap_or_else(|_| panic!("Timed out while awaiting commissioned render"));
+}
+
+#[tokio::test]
+async fn test_custom_skin_error() {
+    let builder = Ordr::builder().with_websocket(false);
+    let ordr = Client::new(builder).await;
+
+    let err = ordr.custom_skin_info(46).await.unwrap_err();
+    println!("{err:#?}");
 }

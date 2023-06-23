@@ -17,6 +17,7 @@ use thiserror::Error as ThisError;
 use crate::model::SkinDeleted;
 
 #[derive(Debug, ThisError)]
+#[non_exhaustive]
 pub enum Error {
     #[error("Failed to build the request")]
     BuildingRequest {
@@ -34,8 +35,6 @@ pub enum Error {
         #[source]
         source: JsonError,
     },
-    #[error("Request was canceled either before or while being sent")]
-    RequestCanceled,
     #[error("Parsing or sending the response failed")]
     RequestError {
         #[source]
@@ -65,6 +64,22 @@ pub enum Error {
     Unauthorized,
 }
 
+impl Error {
+    pub(crate) fn response_error(bytes: Bytes, status_code: u16) -> Self {
+        match serde_json::from_slice(&bytes) {
+            Ok(error) => Self::Response {
+                body: bytes,
+                error,
+                status_code,
+            },
+            Err(source) => Self::Parsing {
+                body: bytes.into(),
+                source,
+            },
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct StringOrBytes {
     bytes: Bytes,
@@ -86,30 +101,94 @@ impl From<Bytes> for StringOrBytes {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ApiError {
+#[non_exhaustive]
+#[serde(untagged)]
+pub enum ApiError {
+    Reasoned(ReasonedApiError),
+    Coded(CodedApiError),
+    General(GeneralApiError),
+}
+
+impl ApiError {
+    pub fn code(&self) -> Option<ErrorCode> {
+        match self {
+            ApiError::Reasoned(err) => Some(err.code),
+            ApiError::Coded(err) => Some(err.code),
+            ApiError::General(_) => None,
+        }
+    }
+
+    pub fn message(&self) -> &str {
+        match self {
+            ApiError::Reasoned(err) => &err.message,
+            ApiError::Coded(err) => &err.message,
+            ApiError::General(err) => &err.message,
+        }
+    }
+}
+
+impl Display for ApiError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        match self {
+            Self::Reasoned(err) => Display::fmt(err, f),
+            Self::Coded(err) => Display::fmt(err, f),
+            Self::General(err) => Display::fmt(err, f),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GeneralApiError {
     /// The response of the server.
     pub message: Box<str>,
-    /// The reason of the ban (if provided by admins).
-    pub reason: Option<Box<str>>,
+}
+
+impl Display for GeneralApiError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        Display::fmt(&self.message, f)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CodedApiError {
+    /// The response of the server.
+    pub message: Box<str>,
     /// The error code of the creation of this render.
     #[serde(rename = "errorCode")]
     pub code: ErrorCode,
 }
 
-impl Display for ApiError {
+impl Display for CodedApiError {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(
             f,
             "Error code {code}: {msg}",
             code = self.code,
-            msg = self.message
-        )?;
+            msg = self.message,
+        )
+    }
+}
 
-        if let Some(ref reason) = self.reason {
-            write!(f, " (reason: {reason})")?;
-        }
+#[derive(Debug, Deserialize)]
+pub struct ReasonedApiError {
+    /// The response of the server.
+    pub message: Box<str>,
+    /// The reason of the ban (if provided by admins).
+    pub reason: Box<str>,
+    /// The error code of the creation of this render.
+    #[serde(rename = "errorCode")]
+    pub code: ErrorCode,
+}
 
-        Ok(())
+impl Display for ReasonedApiError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(
+            f,
+            "Error code {code}: {msg} (reason: {reason})",
+            code = self.code,
+            msg = self.message,
+            reason = self.reason,
+        )
     }
 }
 

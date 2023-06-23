@@ -119,7 +119,7 @@ mod tests {
     }
 
     #[test]
-    fn texts() {
+    fn filled() {
         let mut form = Form::new();
 
         form.push_text("key1", "value1")

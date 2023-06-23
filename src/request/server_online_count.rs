@@ -1,6 +1,6 @@
 use std::future::IntoFuture;
 
-use crate::{error::Error, request::Request, routing::Route, Ordr};
+use crate::{error::Error, model::ServerOnlineCount, request::Request, routing::Route, Ordr};
 
 use super::OrdrFuture;
 
@@ -16,8 +16,8 @@ impl<'a> GetServerOnlineCount<'a> {
 }
 
 impl IntoFuture for &mut GetServerOnlineCount<'_> {
-    type Output = Result<u32, Error>;
-    type IntoFuture = OrdrFuture<u32>;
+    type Output = Result<ServerOnlineCount, Error>;
+    type IntoFuture = OrdrFuture<ServerOnlineCount>;
 
     fn into_future(self) -> Self::IntoFuture {
         self.ordr
@@ -26,8 +26,8 @@ impl IntoFuture for &mut GetServerOnlineCount<'_> {
 }
 
 impl IntoFuture for GetServerOnlineCount<'_> {
-    type Output = Result<u32, Error>;
-    type IntoFuture = OrdrFuture<u32>;
+    type Output = Result<ServerOnlineCount, Error>;
+    type IntoFuture = OrdrFuture<ServerOnlineCount>;
 
     fn into_future(mut self) -> Self::IntoFuture {
         (&mut self).into_future()

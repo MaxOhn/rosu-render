@@ -1,4 +1,7 @@
+use hyper::{body::Bytes, StatusCode};
 use serde::Deserialize;
+
+use crate::{request::Requestable, Error};
 
 /// A list of [`Skin`].
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -9,6 +12,12 @@ pub struct SkinList {
     /// but if search query the total numbers of renders corresponding to that query will be used.
     #[serde(rename = "maxSkins")]
     pub max_skins: u32,
+}
+
+impl Requestable for SkinList {
+    fn response_error(status: StatusCode, bytes: Bytes) -> Error {
+        Error::response_error(bytes, status.as_u16())
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
