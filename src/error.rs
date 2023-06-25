@@ -101,94 +101,29 @@ impl From<Bytes> for StringOrBytes {
 }
 
 #[derive(Debug, Deserialize)]
-#[non_exhaustive]
-#[serde(untagged)]
-pub enum ApiError {
-    Reasoned(ReasonedApiError),
-    Coded(CodedApiError),
-    General(GeneralApiError),
-}
-
-impl ApiError {
-    pub fn code(&self) -> Option<ErrorCode> {
-        match self {
-            ApiError::Reasoned(err) => Some(err.code),
-            ApiError::Coded(err) => Some(err.code),
-            ApiError::General(_) => None,
-        }
-    }
-
-    pub fn message(&self) -> &str {
-        match self {
-            ApiError::Reasoned(err) => &err.message,
-            ApiError::Coded(err) => &err.message,
-            ApiError::General(err) => &err.message,
-        }
-    }
+pub struct ApiError {
+    /// The response of the server.
+    pub message: Box<str>,
+    /// The reason of the ban (if provided by admins).
+    pub reason: Option<Box<str>>,
+    /// The error code of the creation of this render.
+    #[serde(rename = "errorCode")]
+    pub code: Option<ErrorCode>,
 }
 
 impl Display for ApiError {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        match self {
-            Self::Reasoned(err) => Display::fmt(err, f),
-            Self::Coded(err) => Display::fmt(err, f),
-            Self::General(err) => Display::fmt(err, f),
+        if let Some(ref code) = self.code {
+            write!(f, "Error code {code}: ")?;
         }
-    }
-}
 
-#[derive(Debug, Deserialize)]
-pub struct GeneralApiError {
-    /// The response of the server.
-    pub message: Box<str>,
-}
+        f.write_str(&self.message)?;
 
-impl Display for GeneralApiError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        Display::fmt(&self.message, f)
-    }
-}
+        if let Some(ref reason) = self.reason {
+            write!(f, " (reason: {reason})")?;
+        }
 
-#[derive(Debug, Deserialize)]
-pub struct CodedApiError {
-    /// The response of the server.
-    pub message: Box<str>,
-    /// The error code of the creation of this render.
-    #[serde(rename = "errorCode")]
-    pub code: ErrorCode,
-}
-
-impl Display for CodedApiError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        write!(
-            f,
-            "Error code {code}: {msg}",
-            code = self.code,
-            msg = self.message,
-        )
-    }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ReasonedApiError {
-    /// The response of the server.
-    pub message: Box<str>,
-    /// The reason of the ban (if provided by admins).
-    pub reason: Box<str>,
-    /// The error code of the creation of this render.
-    #[serde(rename = "errorCode")]
-    pub code: ErrorCode,
-}
-
-impl Display for ReasonedApiError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        write!(
-            f,
-            "Error code {code}: {msg} (reason: {reason})",
-            code = self.code,
-            msg = self.message,
-            reason = self.reason,
-        )
+        Ok(())
     }
 }
 
