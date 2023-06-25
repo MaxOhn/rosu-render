@@ -134,51 +134,81 @@ impl Display for ApiError {
 #[repr(u8)]
 pub enum ErrorCode {
     #[error("Replay parsing error (bad upload from the sender)")]
-    ReplayParsingError = 2,
+    ReplayParsingError,
     #[error("Replay file corrupted")]
-    ReplayFileCorrupted = 5,
+    ReplayFileCorrupted,
     #[error("Invalid osu! gamemode (not 0 = std)")]
-    InvalidGameMode = 6,
+    InvalidGameMode,
     #[error("The replay has no input data")]
-    ReplayWithoutInputData = 7,
+    ReplayWithoutInputData,
     #[error("Beatmap does not exist on osu! (probably because of custom difficulty or non-submitted map)")]
-    BeatmapNotFound = 8,
+    BeatmapNotFound,
     #[error("Audio for the map is unavailable (because of copyright claim)")]
-    BeatmapAudioUnavailable = 9,
+    BeatmapAudioUnavailable,
     #[error("Cannot connect to osu! api")]
-    OsuApiConnection = 10,
+    OsuApiConnection,
     #[error("The replay has the autoplay mod")]
-    ReplayIsAutoplay = 11,
+    ReplayIsAutoplay,
     #[error("The replay username has invalid characters")]
-    InvalidReplayUsername = 12,
+    InvalidReplayUsername,
     #[error("The beatmap is longer than 15 minutes")]
-    BeatmapTooLong = 13,
+    BeatmapTooLong,
     #[error("This player is banned from o!rdr")]
-    PlayerBannedFromOrdr = 14,
+    PlayerBannedFromOrdr,
     #[error("This IP is banned from o!rdr")]
-    IpBannedFromOrdr = 16,
+    IpBannedFromOrdr,
     #[error("This username is banned from o!rdr")]
-    UsernameBannedFromOrdr = 17,
+    UsernameBannedFromOrdr,
     #[error("Server-side problem while preparing the render")]
-    ServerFailedPreparation = 23,
+    ServerFailedPreparation,
     #[error("The beatmap has no name")]
-    BeatmapHasNoName = 24,
+    BeatmapHasNoName,
     #[error("The replay is missing input data")]
-    ReplayMissingInputData = 25,
+    ReplayMissingInputData,
     #[error("The replay has incompatible mods")]
-    ReplayIncompatibleMods = 26,
+    ReplayIncompatibleMods,
     #[error("The replay is already rendering or in queue")]
-    ReplayAlreadyInQueue = 29,
+    ReplayAlreadyInQueue,
     #[error("The star rating is greater than 20")]
-    StarRatingTooHigh = 30,
+    StarRatingTooHigh,
     #[error("The mapper is blacklisted")]
-    MapperIsBlacklisted = 31,
+    MapperIsBlacklisted,
     #[error("The beatmapset is blacklisted")]
-    BeatmapsetIsBlacklisted = 32,
+    BeatmapsetIsBlacklisted,
     #[error("The replay has already errored less than an hour ago")]
-    ReplayErroredRecently = 33,
+    ReplayErroredRecently,
     #[error("Unknown error code {0}")]
     Other(u8),
+}
+
+impl ErrorCode {
+    pub fn to_u8(self) -> u8 {
+        match self {
+            Self::ReplayParsingError => 2,
+            Self::ReplayFileCorrupted => 5,
+            Self::InvalidGameMode => 6,
+            Self::ReplayWithoutInputData => 7,
+            Self::BeatmapNotFound => 8,
+            Self::BeatmapAudioUnavailable => 9,
+            Self::OsuApiConnection => 10,
+            Self::ReplayIsAutoplay => 11,
+            Self::InvalidReplayUsername => 12,
+            Self::BeatmapTooLong => 13,
+            Self::PlayerBannedFromOrdr => 14,
+            Self::IpBannedFromOrdr => 16,
+            Self::UsernameBannedFromOrdr => 17,
+            Self::ServerFailedPreparation => 23,
+            Self::BeatmapHasNoName => 24,
+            Self::ReplayMissingInputData => 25,
+            Self::ReplayIncompatibleMods => 26,
+            Self::ReplayAlreadyInQueue => 29,
+            Self::StarRatingTooHigh => 30,
+            Self::MapperIsBlacklisted => 31,
+            Self::BeatmapsetIsBlacklisted => 32,
+            Self::ReplayErroredRecently => 33,
+            Self::Other(code) => code,
+        }
+    }
 }
 
 impl<'de> Deserialize<'de> for ErrorCode {
