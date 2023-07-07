@@ -1,164 +1,59 @@
-use std::{collections::HashMap, ops::Deref, sync::Arc, time::Duration};
+use std::time::Duration;
 
 use rosu_render::{
-    client::OrdrBuilder,
-    model::{
-        RenderDone, RenderFail, RenderOptions, RenderProgress, RenderSkinOption, Verification,
-    },
-    Ordr,
+    model::{RenderOptions, RenderSkinOption, Verification},
+    websocket::event::RawEvent,
+    OrdrClient, OrdrWebsocket,
 };
-use tokio::sync::{mpsc, RwLock};
-
-struct Client {
-    ordr: Ordr,
-    senders: Arc<RwLock<HashMap<u32, Senders>>>,
-}
-
-impl Client {
-    async fn new(ordr: OrdrBuilder) -> Self {
-        let senders = Arc::new(RwLock::new(HashMap::<u32, Senders>::new()));
-
-        let done_clone = Arc::clone(&senders);
-        let fail_clone = Arc::clone(&senders);
-        let progress_clone = Arc::clone(&senders);
-
-        let ordr = ordr
-            .on_render_done(move |msg| {
-                let done_clone = Arc::clone(&done_clone);
-
-                Box::pin(async move {
-                    let render_id = msg.render_id;
-                    let guard = done_clone.read().await;
-
-                    if let Some(senders) = guard.get(&render_id) {
-                        let _ = senders.done.send(msg).await;
-                    }
-                })
-            })
-            .on_render_failed(move |msg| {
-                let fail_clone = Arc::clone(&fail_clone);
-
-                Box::pin(async move {
-                    let render_id = msg.render_id;
-                    let guard = fail_clone.read().await;
-
-                    if let Some(senders) = guard.get(&render_id) {
-                        let _ = senders.failed.send(msg).await;
-                    }
-                })
-            })
-            .on_render_progress(move |msg| {
-                let progress_clone = Arc::clone(&progress_clone);
-
-                Box::pin(async move {
-                    let render_id = msg.render_id;
-                    let guard = progress_clone.read().await;
-
-                    if let Some(senders) = guard.get(&render_id) {
-                        let _ = senders.progress.send(msg).await;
-                    }
-                })
-            })
-            .build()
-            .await
-            .unwrap();
-
-        Self { ordr, senders }
-    }
-
-    async fn subscribe_render_id(&self, render_id: u32) -> Receivers {
-        let (done_tx, done_rx) = mpsc::channel(1);
-        let (failed_tx, failed_rx) = mpsc::channel(1);
-        let (progress_tx, progress_rx) = mpsc::channel(8);
-
-        let senders = Senders {
-            done: done_tx,
-            failed: failed_tx,
-            progress: progress_tx,
-        };
-
-        let receivers = Receivers {
-            done: done_rx,
-            failed: failed_rx,
-            progress: progress_rx,
-        };
-
-        self.senders.write().await.insert(render_id, senders);
-
-        receivers
-    }
-
-    async fn unsubscribe_render_id(&self, render_id: u32) {
-        self.senders.write().await.remove(&render_id);
-    }
-}
-
-impl Deref for Client {
-    type Target = Ordr;
-
-    fn deref(&self) -> &Self::Target {
-        &self.ordr
-    }
-}
-
-struct Senders {
-    done: mpsc::Sender<RenderDone>,
-    failed: mpsc::Sender<RenderFail>,
-    progress: mpsc::Sender<RenderProgress>,
-}
-
-struct Receivers {
-    done: mpsc::Receiver<RenderDone>,
-    failed: mpsc::Receiver<RenderFail>,
-    #[allow(unused)]
-    progress: mpsc::Receiver<RenderProgress>,
-}
 
 #[tokio::test]
 async fn test_render_success() {
-    let replay_file = tokio::fs::read("./assets/replay-osu_658127_2283307549.osr")
-        .await
-        .unwrap();
+    let replay_file = tokio::fs::read("./assets/2283307549.osr").await.unwrap();
+
+    let mut websocket = OrdrWebsocket::connect().await.unwrap();
 
     let skin = RenderSkinOption::default();
     let settings = RenderOptions::default();
 
-    let builder = Ordr::builder()
-        .with_websocket(true)
-        .verification(Verification::DevModeSuccess);
-    let ordr = Client::new(builder).await;
+    let client = OrdrClient::builder()
+        .verification(Verification::DevModeSuccess)
+        .build();
 
-    let render_created = ordr
+    let render_added = client
         .render_with_replay_file(&replay_file, "rosu-render-success-test", &skin)
         .options(&settings)
         .await
         .unwrap();
 
-    let mut receivers = ordr.subscribe_render_id(render_created.render_id).await;
-
-    let await_done = async {
+    async fn await_render_done(websocket: &mut OrdrWebsocket, render_id: u32) {
         loop {
-            tokio::select! {
-                _ = receivers.done.recv() => break,
-                failed = receivers.failed.recv() => panic!("Websocket error while awaiting render: {failed:?}"),
-                progress = receivers.progress.recv() => {
-                    let progress = progress.unwrap();
+            match websocket.next_event().await {
+                Ok(RawEvent::RenderDone(event)) if event.render_id == render_id => return,
+                Ok(RawEvent::RenderProgress(event)) if event.render_id == render_id => {
+                    let progress = event.deserialize().unwrap();
                     println!("{}: {}", progress.render_id, progress.progress);
                 }
+                Ok(RawEvent::RenderFailed(event)) if event.render_id == render_id => {
+                    let failed = event.deserialize().unwrap();
+                    panic!("Websocket error while awaiting render: {failed:?}");
+                }
+                Ok(_) => {}
+                Err(err) => println!("Websocket error: {err:?}"),
             }
         }
-    };
+    }
 
-    let timeout_res = tokio::time::timeout(Duration::from_secs(60), await_done).await;
-    ordr.unsubscribe_render_id(render_created.render_id).await;
+    let await_done_fut = await_render_done(&mut websocket, render_added.render_id);
+    let timeout_res = tokio::time::timeout(Duration::from_secs(60), await_done_fut).await;
     timeout_res.unwrap_or_else(|_| panic!("Timed out while awaiting commissioned render"));
+
+    websocket.disconnect().await.unwrap();
 }
 
 #[tokio::test]
 async fn test_custom_skin_error() {
-    let builder = Ordr::builder().with_websocket(false);
-    let ordr = Client::new(builder).await;
+    let client = OrdrClient::builder().build();
 
-    let err = ordr.custom_skin_info(46).await.unwrap_err();
+    let err = client.custom_skin_info(46).await.unwrap_err();
     println!("{err:#?}");
 }

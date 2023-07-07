@@ -7,7 +7,7 @@ use hyper::{body::Bytes, StatusCode};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use crate::{request::Requestable, util::datetime::deserialize_datetime, Error};
+use crate::{request::Requestable, util::datetime::deserialize_datetime, ClientError};
 
 /// A list of [`Render`].
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -21,8 +21,8 @@ pub struct RenderList {
 }
 
 impl Requestable for RenderList {
-    fn response_error(status: StatusCode, bytes: Bytes) -> Error {
-        Error::response_error(bytes, status.as_u16())
+    fn response_error(status: StatusCode, bytes: Bytes) -> ClientError {
+        ClientError::response_error(bytes, status.as_u16())
     }
 }
 
@@ -75,20 +75,6 @@ pub struct Render {
     #[serde(rename = "replayMods")]
     pub replay_mods: Box<str>,
     pub removed: bool,
-}
-
-/// The response of the server when the render got created successfully.
-#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Eq, Hash)]
-pub struct RenderCreated {
-    /// The render ID of your render that got created.
-    #[serde(rename = "renderID")]
-    pub render_id: u32,
-}
-
-impl Requestable for RenderCreated {
-    fn response_error(status: StatusCode, bytes: Bytes) -> Error {
-        Error::response_error(bytes, status.as_u16())
-    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize)]
@@ -312,8 +298,8 @@ pub struct RenderServers {
 }
 
 impl Requestable for RenderServers {
-    fn response_error(status: StatusCode, bytes: Bytes) -> Error {
-        Error::response_error(bytes, status.as_u16())
+    fn response_error(status: StatusCode, bytes: Bytes) -> ClientError {
+        ClientError::response_error(bytes, status.as_u16())
     }
 }
 
@@ -365,11 +351,11 @@ pub struct RenderServerOptions {
     pub background_type: i32,
 }
 
-#[derive(Copy, Clone, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ServerOnlineCount(pub u32);
 
 impl Requestable for ServerOnlineCount {
-    fn response_error(status: StatusCode, bytes: Bytes) -> Error {
-        Error::response_error(bytes, status.as_u16())
+    fn response_error(status: StatusCode, bytes: Bytes) -> ClientError {
+        ClientError::response_error(bytes, status.as_u16())
     }
 }

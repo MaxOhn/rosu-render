@@ -2,7 +2,7 @@ use std::future::IntoFuture;
 
 use serde::Serialize;
 
-use crate::{error::Error, model::SkinList, request::Request, routing::Route, Ordr};
+use crate::{model::SkinList, request::Request, routing::Route, ClientError, OrdrClient};
 
 use super::OrdrFuture;
 
@@ -16,12 +16,12 @@ struct GetSkinListFields<'a> {
 
 // TODO: docs
 pub struct GetSkinList<'a> {
-    ordr: &'a Ordr,
+    ordr: &'a OrdrClient,
     fields: GetSkinListFields<'a>,
 }
 
 impl<'a> GetSkinList<'a> {
-    pub(crate) const fn new(ordr: &'a Ordr) -> Self {
+    pub(crate) const fn new(ordr: &'a OrdrClient) -> Self {
         Self {
             ordr,
             fields: GetSkinListFields {
@@ -56,7 +56,7 @@ impl<'a> GetSkinList<'a> {
 }
 
 impl IntoFuture for &mut GetSkinList<'_> {
-    type Output = Result<SkinList, Error>;
+    type Output = Result<SkinList, ClientError>;
     type IntoFuture = OrdrFuture<SkinList>;
 
     fn into_future(self) -> Self::IntoFuture {
@@ -68,7 +68,7 @@ impl IntoFuture for &mut GetSkinList<'_> {
 }
 
 impl IntoFuture for GetSkinList<'_> {
-    type Output = Result<SkinList, Error>;
+    type Output = Result<SkinList, ClientError>;
     type IntoFuture = OrdrFuture<SkinList>;
 
     fn into_future(mut self) -> Self::IntoFuture {

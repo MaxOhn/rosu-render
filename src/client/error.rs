@@ -5,7 +5,6 @@ use std::{
 };
 
 use hyper::{body::Bytes, Body, Error as HyperError, Response};
-use rust_socketio::Error as SocketIoError;
 use serde::{
     de::{Deserializer, Error as DeError, Unexpected, Visitor},
     Deserialize,
@@ -18,7 +17,7 @@ use crate::model::SkinDeleted;
 
 #[derive(Debug, ThisError)]
 #[non_exhaustive]
-pub enum Error {
+pub enum ClientError {
     #[error("Failed to build the request")]
     BuildingRequest {
         #[source]
@@ -55,16 +54,11 @@ pub enum Error {
     ServiceUnavailable { response: Response<Body> },
     #[error("Skin was not found (received a 404)")]
     SkinDeleted { error: SkinDeleted },
-    #[error("socket.io error")]
-    SocketIo {
-        #[from]
-        source: SocketIoError,
-    },
     #[error("Banned from o!rdr. All future requests will fail.")]
     Unauthorized,
 }
 
-impl Error {
+impl ClientError {
     pub(crate) fn response_error(bytes: Bytes, status_code: u16) -> Self {
         match serde_json::from_slice(&bytes) {
             Ok(error) => Self::Response {

@@ -1,7 +1,7 @@
 use hyper::{body::Bytes, StatusCode};
 use serde::Deserialize;
 
-use crate::{request::Requestable, Error};
+use crate::{request::Requestable, ClientError};
 
 /// A list of [`Skin`].
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -15,8 +15,8 @@ pub struct SkinList {
 }
 
 impl Requestable for SkinList {
-    fn response_error(status: StatusCode, bytes: Bytes) -> Error {
-        Error::response_error(bytes, status.as_u16())
+    fn response_error(status: StatusCode, bytes: Bytes) -> ClientError {
+        ClientError::response_error(bytes, status.as_u16())
     }
 }
 

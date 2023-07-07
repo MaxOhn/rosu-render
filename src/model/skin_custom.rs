@@ -1,7 +1,7 @@
 use hyper::{body::Bytes, StatusCode};
 use serde::Deserialize;
 
-use crate::{request::Requestable, Error};
+use crate::{request::Requestable, ClientError};
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 pub struct SkinInfo {
@@ -17,17 +17,17 @@ pub struct SkinInfo {
 }
 
 impl Requestable for SkinInfo {
-    fn response_error(status: StatusCode, bytes: Bytes) -> Error {
+    fn response_error(status: StatusCode, bytes: Bytes) -> ClientError {
         if status == StatusCode::NOT_FOUND {
             match serde_json::from_slice(&bytes) {
-                Ok(error) => Error::SkinDeleted { error },
-                Err(source) => Error::Parsing {
+                Ok(error) => ClientError::SkinDeleted { error },
+                Err(source) => ClientError::Parsing {
                     body: bytes.into(),
                     source,
                 },
             }
         } else {
-            Error::response_error(bytes, status.as_u16())
+            ClientError::response_error(bytes, status.as_u16())
         }
     }
 }

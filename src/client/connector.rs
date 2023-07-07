@@ -10,11 +10,7 @@ type HttpsConnector<T> = hyper_rustls::HttpsConnector<T>;
 ))]
 type HttpsConnector<T> = hyper_tls::HttpsConnector<T>;
 
-/// HTTP connector using `trust-dns` as a DNS backend.
-#[cfg(feature = "trust-dns")]
-type HttpConnector = hyper_trust_dns::TrustDnsHttpConnector;
 /// HTTP connector.
-#[cfg(not(feature = "trust-dns"))]
 type HttpConnector = hyper::client::HttpConnector;
 
 /// Re-exported generic connector for use in the client.
@@ -34,10 +30,7 @@ pub type Connector = HttpConnector;
 
 /// Create a connector with the specified features.
 pub fn create() -> Connector {
-    #[cfg(not(feature = "trust-dns"))]
     let mut connector = hyper::client::HttpConnector::new();
-    #[cfg(feature = "trust-dns")]
-    let mut connector = hyper_trust_dns::TrustDnsResolver::default().into_http_connector();
 
     connector.enforce_http(false);
 
