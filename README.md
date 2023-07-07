@@ -1,76 +1,97 @@
 # rosu-render
 
-Rust wrapper for the [API](https://ordr.issou.best/docs/) of [o!rdr](https://ordr.issou.best/) to render [osu!](https://osu.ppy.sh/home) replays.
+Rust wrapper for the [API and websocket](https://ordr.issou.best/docs/) of [`o!rdr`] to render [`osu!`] replays.
 
 ## Usage
 
 ```rust
 use rosu_render::{
     model::{RenderSkinOption, Verification},
-    Ordr,
+    OrdrClient, OrdrWebsocket,
 };
-use std::future::ready;
 
-let ordr = Ordr::builder()
-    .verification(Verification::Key("my_key".into()))
-    .with_websocket(true) // defaults to true so this line can be omitted
-    .on_render_progress(|progress| {
-        Box::pin(ready(println!(
-            "{id}: {text}",
-            id = progress.render_id,
-            text = progress.progress
-        )))
-    })
-    .on_render_done(|done| {
-        Box::pin(ready(println!(
-            "{id}: URL={url}",
-            id = done.render_id,
-            url = done.video_url
-        )))
-    })
-    .on_render_failed(|failed| {
-        Box::pin(ready(println!(
-            "{id}: Failed: {msg}",
-            id = failed.render_id,
-            msg = failed.error_msg
-        )))
-    })
-    .build()
-    .await
-    .expect("Failed to connect websocket");
+#[tokio::main]
+async fn main() {
+    // In production, use your key as verification or omit verification entirely.
+    let client = OrdrClient::builder().verification(Verification::DevModeSuccess).build();
+    let mut websocket = OrdrWebsocket::connect().await.expect("Failed to connect websocket");
 
-let render_list = ordr.render_list().page_size(2).await.expect("Failed to get render list");
-println!("{render_list:#?}");
+    // The channel lets us notify the websocket when to disconnect
+    let (disconnect_tx, mut disconnect_rx) = tokio::sync::oneshot::channel::<()>();
 
-let skin_list = ordr.skin_list().page_size(3).page(2).await.expect("Failed to get skin list");
-println!("{skin_list:#?}");
+    // Handle websocket events in a different task
+    let websocket_handle = tokio::spawn(async move {
+        loop {
+            tokio::select! {
+                event_res = websocket.next_event() => {
+                    match event_res {
+                        Ok(event) => println!("{event:?}"),
+                        Err(err) => println!("Websocket error: {err:?}"),
+                    }
+                },
+                _ = &mut disconnect_rx => {
+                    println!("Received disconnect notification");
+                    websocket.disconnect().await.expect("Failed to disconnect gracefully");
 
-let server_list_count = ordr.server_online_count().await.expect("Failed to get server list count");
-println!("Server list count: {server_list_count}");
+                    return;
+                }
+            }
+        }
+    });
 
-let replay_file = tokio::fs::read("./4165361249.osr").await.expect("Failed to get replay file");
-let skin = RenderSkinOption::new("YUGEN", true);
-let render = ordr
-    .render_with_replay_file(&replay_file, "your_name", &skin)
-    .await
-    .expect("Failed to commission replay render");
-println!("{render:#?}");
+    // Requesting from the API
 
-// Now the websocket will receive events for your commissioned replay render
+    let render_list = client
+        .render_list()
+        .page_size(2)
+        .await
+        .expect("Failed to get render list");
+    println!("{render_list:#?}");
 
-tokio::signal::ctrl_c().await.unwrap();
+    let skin_list = client
+        .skin_list()
+        .page_size(3)
+        .page(2)
+        .await
+        .expect("Failed to get skin list");
+    println!("{skin_list:#?}");
 
-// To disconnect the websocket properly before dropping the client, call this method
-ordr.disconnect().await.unwrap();
+    let server_list_count = client
+        .server_online_count()
+        .await
+        .expect("Failed to get server list count");
+    println!("{server_list_count:?}");
 
-println!("Shutting down");
+    let replay_file = tokio::fs::read("./assets/2283307549.osr")
+        .await
+        .expect("Failed to get replay file");
+    let skin = RenderSkinOption::default();
+    let render = client
+        .render_with_replay_file(&replay_file, "your_name", &skin)
+        .await
+        .expect("Failed to commission replay render");
+    println!("{render:#?}");
+
+    // Now the websocket will receive events for your commissioned replay render
+
+    tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+
+    // Notify the websocket to disconnect
+    let _ = disconnect_tx.send(());
+    websocket_handle.await.expect("websocket worker panicked");
+
+    println!("Shutting down");
+}
 ```
 
-## Status
+## Features
 
-Although this library is fully functional, it is lacking tests, CI, and more examples. It's also missing a few optional features like flexible TLS connectors for socket.io; it currently always uses `rustls-webpki-roots`.
+* `native`: platform's native TLS implementation via [`native-tls`]
+* `rustls-native-roots`: [`rustls`] using native root certificates
+* `rustls-webpki-roots` (*default*): [`rustls`] using [`webpki-roots`] for root certificates
 
-Since the underlying socket.io wrapper is only a fork that's not pushed to crates.io, this library cannot be published and must currently be imported via 
-```toml
-rosu_render = { git = "https://github.com/MaxOhn/rosu-render" }
-```
+[`o!rdr`]: https://ordr.issou.best/
+[`osu`]: https://osu.ppy.sh/home
+[`native-tls`]: https://crates.io/crates/native-tls
+[`rustls`]: https://crates.io/crates/rustls
+[`webpki-roots`]: https://crates.io/crates/webpki-roots

@@ -1,11 +1,10 @@
 use std::future::IntoFuture;
 
 use crate::{
-    error::Error,
-    model::{RenderCreated, RenderOptions, RenderSkinOption},
+    model::{RenderAdded, RenderOptions, RenderSkinOption},
     routing::Route,
     util::multipart::Form,
-    Ordr,
+    ClientError, OrdrClient,
 };
 
 use super::{OrdrFuture, Request};
@@ -15,18 +14,20 @@ enum ReplaySource<'a> {
     Url(&'a str),
 }
 
-// TODO: docs
-pub struct SendRender<'a> {
-    ordr: &'a Ordr,
+/// Commission a render job to o!rdr.
+///
+/// If successful, progress of the rendering can be tracking through the [`OrdrWebsocket`](crate::OrdrWebsocket).
+pub struct CommissionRender<'a> {
+    ordr: &'a OrdrClient,
     replay_source: ReplaySource<'a>,
     username: &'a str,
     skin: &'a RenderSkinOption<'a>,
     options: Option<&'a RenderOptions>,
 }
 
-impl<'a> SendRender<'a> {
+impl<'a> CommissionRender<'a> {
     pub(crate) const fn with_file(
-        ordr: &'a Ordr,
+        ordr: &'a OrdrClient,
         replay_file: &'a [u8],
         username: &'a str,
         skin: &'a RenderSkinOption<'a>,
@@ -41,7 +42,7 @@ impl<'a> SendRender<'a> {
     }
 
     pub(crate) const fn with_url(
-        ordr: &'a Ordr,
+        ordr: &'a OrdrClient,
         replay_url: &'a str,
         username: &'a str,
         skin: &'a RenderSkinOption<'a>,
@@ -55,7 +56,7 @@ impl<'a> SendRender<'a> {
         }
     }
 
-    // TODO: docs
+    /// Specify rendering options.
     pub fn options(mut self, options: &'a RenderOptions) -> Self {
         self.options = Some(options);
 
@@ -63,9 +64,9 @@ impl<'a> SendRender<'a> {
     }
 }
 
-impl IntoFuture for &mut SendRender<'_> {
-    type Output = Result<RenderCreated, Error>;
-    type IntoFuture = OrdrFuture<RenderCreated>;
+impl IntoFuture for &mut CommissionRender<'_> {
+    type Output = Result<RenderAdded, ClientError>;
+    type IntoFuture = OrdrFuture<RenderAdded>;
 
     fn into_future(self) -> Self::IntoFuture {
         let mut form = self.options.map_or_else(Form::new, Form::serialize);
@@ -97,9 +98,9 @@ impl IntoFuture for &mut SendRender<'_> {
     }
 }
 
-impl IntoFuture for SendRender<'_> {
-    type Output = Result<RenderCreated, Error>;
-    type IntoFuture = OrdrFuture<RenderCreated>;
+impl IntoFuture for CommissionRender<'_> {
+    type Output = Result<RenderAdded, ClientError>;
+    type IntoFuture = OrdrFuture<RenderAdded>;
 
     fn into_future(mut self) -> Self::IntoFuture {
         (&mut self).into_future()

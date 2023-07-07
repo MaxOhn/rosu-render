@@ -1,22 +1,22 @@
 use std::future::IntoFuture;
 
-use crate::{error::Error, model::RenderServers, request::Request, routing::Route, Ordr};
+use crate::{model::RenderServers, request::Request, routing::Route, ClientError, OrdrClient};
 
 use super::OrdrFuture;
 
 // TODO: docs
 pub struct GetServerList<'a> {
-    ordr: &'a Ordr,
+    ordr: &'a OrdrClient,
 }
 
 impl<'a> GetServerList<'a> {
-    pub(crate) const fn new(ordr: &'a Ordr) -> Self {
+    pub(crate) const fn new(ordr: &'a OrdrClient) -> Self {
         Self { ordr }
     }
 }
 
 impl IntoFuture for &mut GetServerList<'_> {
-    type Output = Result<RenderServers, Error>;
+    type Output = Result<RenderServers, ClientError>;
     type IntoFuture = OrdrFuture<RenderServers>;
 
     fn into_future(self) -> Self::IntoFuture {
@@ -25,7 +25,7 @@ impl IntoFuture for &mut GetServerList<'_> {
 }
 
 impl IntoFuture for GetServerList<'_> {
-    type Output = Result<RenderServers, Error>;
+    type Output = Result<RenderServers, ClientError>;
     type IntoFuture = OrdrFuture<RenderServers>;
 
     fn into_future(mut self) -> Self::IntoFuture {

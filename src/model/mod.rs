@@ -1,18 +1,16 @@
-mod done;
-mod fail;
-mod progress;
+mod event;
 mod render;
 mod skin_custom;
 mod skin_list;
 mod verification;
 
 pub use self::{
-    done::RenderDone,
-    fail::RenderFail,
-    progress::RenderProgress,
+    event::{
+        CustomSkinProcessUpdate, Event, RenderAdded, RenderDone, RenderFailed, RenderProgress,
+    },
     render::{
-        Render, RenderCreated, RenderList, RenderOptions, RenderResolution, RenderServer,
-        RenderServers, RenderSkinOption, ServerOnlineCount,
+        Render, RenderList, RenderOptions, RenderResolution, RenderServer, RenderServers,
+        RenderSkinOption, ServerOnlineCount,
     },
     skin_custom::{SkinDeleted, SkinInfo},
     skin_list::{Skin, SkinList},

@@ -2,7 +2,7 @@ use std::future::IntoFuture;
 
 use serde::Serialize;
 
-use crate::{error::Error, model::RenderList, routing::Route, Ordr};
+use crate::{model::RenderList, routing::Route, ClientError, OrdrClient};
 
 use super::{OrdrFuture, Request};
 
@@ -26,12 +26,12 @@ struct GetRenderListFields<'a> {
 
 // TODO: docs
 pub struct GetRenderList<'a> {
-    ordr: &'a Ordr,
+    ordr: &'a OrdrClient,
     fields: GetRenderListFields<'a>,
 }
 
 impl<'a> GetRenderList<'a> {
-    pub(crate) const fn new(ordr: &'a Ordr) -> Self {
+    pub(crate) const fn new(ordr: &'a OrdrClient) -> Self {
         Self {
             ordr,
             fields: GetRenderListFields {
@@ -106,7 +106,7 @@ impl<'a> GetRenderList<'a> {
 }
 
 impl IntoFuture for &mut GetRenderList<'_> {
-    type Output = Result<RenderList, Error>;
+    type Output = Result<RenderList, ClientError>;
     type IntoFuture = OrdrFuture<RenderList>;
 
     fn into_future(self) -> Self::IntoFuture {
@@ -118,7 +118,7 @@ impl IntoFuture for &mut GetRenderList<'_> {
 }
 
 impl IntoFuture for GetRenderList<'_> {
-    type Output = Result<RenderList, Error>;
+    type Output = Result<RenderList, ClientError>;
     type IntoFuture = OrdrFuture<RenderList>;
 
     fn into_future(mut self) -> Self::IntoFuture {

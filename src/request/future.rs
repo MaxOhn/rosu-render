@@ -18,7 +18,7 @@ use leaky_bucket::AcquireOwned;
 use pin_project::pin_project;
 use serde::de::DeserializeOwned;
 
-use crate::error::Error;
+use crate::ClientError;
 
 use super::requestable::Requestable;
 
@@ -46,7 +46,7 @@ impl<T> OrdrFuture<T> {
         }
     }
 
-    pub(crate) const fn error(source: Error) -> Self {
+    pub(crate) const fn error(source: ClientError) -> Self {
         Self {
             ratelimit: None,
             state: OrdrFutureState::Failed(Some(source)),
@@ -69,7 +69,7 @@ impl<T> OrdrFuture<T> {
 }
 
 impl<T: DeserializeOwned + Requestable> Future for OrdrFuture<T> {
-    type Output = Result<T, Error>;
+    type Output = Result<T, ClientError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut this = self.project();
@@ -119,20 +119,20 @@ impl<T: DeserializeOwned + Requestable> Future for OrdrFuture<T> {
 enum OrdrFutureState<T> {
     Chunking(#[pin] Chunking<T>),
     Completed,
-    Failed(Option<Error>),
+    Failed(Option<ClientError>),
     InFlight(#[pin] InFlight<T>),
 }
 
 #[pin_project]
 struct Chunking<T> {
     #[pin]
-    fut: Pin<Box<dyn Future<Output = Result<Bytes, Error>> + Send + Sync + 'static>>,
+    fut: Pin<Box<dyn Future<Output = Result<Bytes, ClientError>> + Send + Sync + 'static>>,
     status: StatusCode,
     phantom: PhantomData<T>,
 }
 
 impl<T: DeserializeOwned + Requestable> Future for Chunking<T> {
-    type Output = Result<T, Error>;
+    type Output = Result<T, ClientError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
@@ -146,7 +146,7 @@ impl<T: DeserializeOwned + Requestable> Future for Chunking<T> {
         let res = if this.status.is_success() {
             match serde_json::from_slice(&bytes) {
                 Ok(this) => Ok(this),
-                Err(source) => Err(Error::Parsing {
+                Err(source) => Err(ClientError::Parsing {
                     body: bytes.into(),
                     source,
                 }),
@@ -168,14 +168,16 @@ struct InFlight<T> {
 }
 
 impl<T: Requestable> Future for InFlight<T> {
-    type Output = Result<Chunking<T>, Error>;
+    type Output = Result<Chunking<T>, ClientError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
 
         let response = match this.fut.poll(cx) {
             Poll::Ready(Ok(response)) => response,
-            Poll::Ready(Err(source)) => return Poll::Ready(Err(Error::RequestError { source })),
+            Poll::Ready(Err(source)) => {
+                return Poll::Ready(Err(ClientError::RequestError { source }))
+            }
             Poll::Pending => return Poll::Pending,
         };
 
@@ -185,7 +187,7 @@ impl<T: Requestable> Future for InFlight<T> {
             StatusCode::TOO_MANY_REQUESTS => warn!("429 response: {response:?}"),
             StatusCode::UNAUTHORIZED => this.banned.store(true, Ordering::Relaxed),
             StatusCode::SERVICE_UNAVAILABLE => {
-                return Poll::Ready(Err(Error::ServiceUnavailable { response }))
+                return Poll::Ready(Err(ClientError::ServiceUnavailable { response }))
             }
             _ => {}
         };
@@ -196,7 +198,7 @@ impl<T: Requestable> Future for InFlight<T> {
 
             body::to_bytes(body)
                 .await
-                .map_err(|source| Error::ChunkingResponse { source })
+                .map_err(|source| ClientError::ChunkingResponse { source })
         };
 
         Poll::Ready(Ok(Chunking {

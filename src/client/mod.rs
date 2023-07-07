@@ -2,6 +2,8 @@ mod builder;
 mod connector;
 mod ratelimiter;
 
+pub mod error;
+
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -12,54 +14,44 @@ use hyper::{
     http::HeaderValue,
     Body, Client as HyperClient, Method, Request as HyperRequest,
 };
-use rust_socketio::asynchronous::Client as SocketIoClient;
 
-pub use self::builder::OrdrBuilder;
+pub use self::builder::OrdrClientBuilder;
 pub(crate) use self::ratelimiter::RatelimiterKind;
-use self::{connector::Connector, ratelimiter::Ratelimiter};
+use self::{connector::Connector, error::ClientError, ratelimiter::Ratelimiter};
 
 use crate::{
-    error::Error,
     model::{RenderSkinOption, Verification},
     request::{
-        GetRenderList, GetServerList, GetServerOnlineCount, GetSkinCustom, GetSkinList, OrdrFuture,
-        Request, SendRender,
+        CommissionRender, GetRenderList, GetServerList, GetServerOnlineCount, GetSkinCustom,
+        GetSkinList, OrdrFuture, Request,
     },
 };
 
 const BASE_URL: &str = "https://apis.issou.best/ordr/";
 const ROSU_RENDER_USER_AGENT: &str = concat!("rosu-render (", env!("CARGO_PKG_VERSION"), ")");
 
+type HttpClient = HyperClient<Connector>;
+
 /// Client to access the o!rdr API and websocket.
 ///
 /// Cheap to clone as the underlying http client and websocket will be re-used.
 #[derive(Clone)]
-pub struct Ordr {
+pub struct OrdrClient {
     inner: Arc<OrdrRef>,
 }
 
 struct OrdrRef {
-    pub(super) http: HyperClient<Connector>,
-    pub(super) socket: Option<SocketIoClient>,
+    pub(super) http: HttpClient,
     pub(super) ratelimiter: Ratelimiter,
     // don't perform further requests when we're banned
     pub(super) banned: Arc<AtomicBool>,
     pub(super) verification: Option<Verification>,
 }
 
-impl Ordr {
-    /// Create a new builder to create [`Ordr`].
-    pub fn builder() -> OrdrBuilder {
-        OrdrBuilder::new()
-    }
-
-    /// Disconnects the websocket. This should be called before dropping the [`Ordr`].
-    pub async fn disconnect(&self) -> Result<(), Error> {
-        if let Some(ref socket) = self.inner.socket {
-            socket.disconnect().await.map_err(Error::from)?;
-        }
-
-        Ok(())
+impl OrdrClient {
+    /// Create a new builder to create an [`OrdrClient`].
+    pub fn builder() -> OrdrClientBuilder {
+        OrdrClientBuilder::new()
     }
 
     /// Get info of a custom skin.
@@ -75,8 +67,8 @@ impl Ordr {
         replay_file: &'a [u8],
         username: &'a str,
         skin: &'a RenderSkinOption<'a>,
-    ) -> SendRender<'a> {
-        SendRender::with_file(self, replay_file, username, skin)
+    ) -> CommissionRender<'a> {
+        CommissionRender::with_file(self, replay_file, username, skin)
     }
 
     /// Send a render request to o!rdr via replay url.
@@ -85,8 +77,8 @@ impl Ordr {
         url: &'a str,
         username: &'a str,
         skin: &'a RenderSkinOption<'a>,
-    ) -> SendRender<'a> {
-        SendRender::with_url(self, url, username, skin)
+    ) -> CommissionRender<'a> {
+        CommissionRender::with_url(self, url, username, skin)
     }
 
     /// Get a paginated list of all renders.
@@ -117,9 +109,9 @@ impl Ordr {
         self.try_request::<T>(req).unwrap_or_else(OrdrFuture::error)
     }
 
-    fn try_request<T>(&self, req: Request) -> Result<OrdrFuture<T>, Error> {
+    fn try_request<T>(&self, req: Request) -> Result<OrdrFuture<T>, ClientError> {
         if self.inner.banned.load(Ordering::Relaxed) {
-            return Err(Error::Unauthorized);
+            return Err(ClientError::Unauthorized);
         }
 
         let Request {
@@ -156,7 +148,7 @@ impl Ordr {
             builder.body(Body::empty())
         };
 
-        let req = try_req.map_err(|source| Error::BuildingRequest {
+        let req = try_req.map_err(|source| ClientError::BuildingRequest {
             source: Box::new(source),
         })?;
 

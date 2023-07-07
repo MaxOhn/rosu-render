@@ -8,31 +8,36 @@ repository = "https://github.com/MaxOhn/rosu-render"
 license    = "MIT"
 
 [dependencies]
+bytes = { version = "1.4" }
 form_urlencoded = { version = "1.2" }
 futures = { version = "0.3", default-features = false }
 hyper = { version = "0.14", default-features = false, features = ["client", "http1", "http2", "runtime"] }
 hyper-rustls = { version = "0.24", default-features = false, optional = true, features = ["http1", "http2"] }
 hyper-tls = { version = "0.5", default-features = false, optional = true }
-hyper-trust-dns = { version = "0.5", default-features = false, optional = true }
 itoa = { version = "1.0" }
 leaky-bucket = { version = "1.0" }
-pin-project = "1.1.0"
+native-tls = { version = "0.2", default-features = false, optional = true }
+pin-project = { version = "1.1" }
 rand = { version = "0.8", default-features = false, features = ["std_rng", "std"] }
-rust_socketio = { git = "https://github.com/MaxOhn/rust-socketio", branch = "custom", features = ["async"] }
+rustls-native-certs = { version = "0.6", default-features = false, optional = true }
+rustls-tls = { version = "0.21", default-features = false, optional = true, package = "rustls" }
 ryu = { version = "1.0" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 serde_urlencoded = { version = "0.7" }
 thiserror = { version = "1.0" }
 time = { version = "0.3", features = ["formatting", "parsing"] }
+tokio = { version = "1.0", default-features = false, features = ["net"] }
+tokio-tungstenite = { version = "0.19", default-features = false, features = ["connect", "handshake"] }
 tracing = { version = "0.1", default-features = false, features = ["std", "attributes"] }
+url = { version = "2.0" }
+webpki-roots = { version = "0.23", default-features = false, optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.0", default-features = false, features = ["fs", "macros", "rt", "sync"] }
+tokio = { version = "1.0", default-features = false, features = ["fs", "macros", "rt-multi-thread", "sync"] }
 
 [features]
 default = ["rustls-webpki-roots"]
-native = ["dep:hyper-tls"]
-rustls-native-roots = ["dep:hyper-rustls", "hyper-rustls?/native-tokio"]
-rustls-webpki-roots = ["dep:hyper-rustls", "hyper-rustls?/webpki-tokio"]
-trust-dns = ["dep:hyper-trust-dns"]
+native = ["dep:hyper-tls", "dep:native-tls", "tokio-tungstenite/native-tls"]
+rustls-native-roots = ["dep:hyper-rustls", "dep:rustls-tls", "dep:rustls-native-certs", "hyper-rustls?/native-tokio", "tokio-tungstenite/rustls-tls-native-roots"]
+rustls-webpki-roots = ["dep:hyper-rustls", "dep:rustls-tls", "dep:webpki-roots", "hyper-rustls?/webpki-tokio", "tokio-tungstenite/rustls-tls-webpki-roots"]
