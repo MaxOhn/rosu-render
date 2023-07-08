@@ -125,10 +125,17 @@ impl Display for ApiError {
 ///
 /// See <https://ordr.issou.best/docs/#section/Error-codes>
 #[derive(Copy, Clone, Debug, ThisError, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 #[repr(u8)]
 pub enum ErrorCode {
+    #[error("Emergency stop (triggered manually)")]
+    EmergencyStop,
     #[error("Replay parsing error (bad upload from the sender)")]
     ReplayParsingError,
+    #[error("Replay download error (bad download from the server), can happen because of invalid characters")]
+    ReplayDownloadError,
+    #[error("All beatmap mirrors are unavailable")]
+    MirrorsUnavailable,
     #[error("Replay file corrupted")]
     ReplayFileCorrupted,
     #[error("Invalid osu! gamemode (not 0 = std)")]
@@ -149,10 +156,22 @@ pub enum ErrorCode {
     BeatmapTooLong,
     #[error("This player is banned from o!rdr")]
     PlayerBannedFromOrdr,
+    #[error("Beatmap not found on all the beatmap mirrors")]
+    MapNotFound,
     #[error("This IP is banned from o!rdr")]
     IpBannedFromOrdr,
     #[error("This username is banned from o!rdr")]
     UsernameBannedFromOrdr,
+    #[error("Unknown error from the renderer")]
+    UnknownRendererError,
+    #[error("The renderer cannot download the map")]
+    CannotDownloadMap,
+    #[error("Beatmap version on the mirror is not the same as the replay")]
+    InconsistentMapVersion,
+    #[error("The replay is corrupted (danser cannot process it)")]
+    ReplayFileCorrupted2,
+    #[error("Server-side problem while finalizing the generated video")]
+    FailedFinalizing,
     #[error("Server-side problem while preparing the render")]
     ServerFailedPreparation,
     #[error("The beatmap has no name")]
@@ -161,6 +180,13 @@ pub enum ErrorCode {
     ReplayMissingInputData,
     #[error("The replay has incompatible mods")]
     ReplayIncompatibleMods,
+    #[error(
+        "Something with the renderer went wrong: it probably has an unstable internet connection \
+        (multiple renders at the same time)"
+    )]
+    RendererIssue,
+    #[error("The renderer cannot download the replay")]
+    CannotDownloadReplay,
     #[error("The replay is already rendering or in queue")]
     ReplayAlreadyInQueue,
     #[error("The star rating is greater than 20")]
@@ -178,7 +204,10 @@ pub enum ErrorCode {
 impl ErrorCode {
     pub fn to_u8(self) -> u8 {
         match self {
+            Self::EmergencyStop => 1,
             Self::ReplayParsingError => 2,
+            Self::ReplayDownloadError => 3,
+            Self::MirrorsUnavailable => 4,
             Self::ReplayFileCorrupted => 5,
             Self::InvalidGameMode => 6,
             Self::ReplayWithoutInputData => 7,
@@ -189,12 +218,20 @@ impl ErrorCode {
             Self::InvalidReplayUsername => 12,
             Self::BeatmapTooLong => 13,
             Self::PlayerBannedFromOrdr => 14,
+            Self::MapNotFound => 15,
             Self::IpBannedFromOrdr => 16,
             Self::UsernameBannedFromOrdr => 17,
+            Self::UnknownRendererError => 18,
+            Self::CannotDownloadMap => 19,
+            Self::InconsistentMapVersion => 20,
+            Self::ReplayFileCorrupted2 => 21,
+            Self::FailedFinalizing => 22,
             Self::ServerFailedPreparation => 23,
             Self::BeatmapHasNoName => 24,
             Self::ReplayMissingInputData => 25,
             Self::ReplayIncompatibleMods => 26,
+            Self::RendererIssue => 27,
+            Self::CannotDownloadReplay => 28,
             Self::ReplayAlreadyInQueue => 29,
             Self::StarRatingTooHigh => 30,
             Self::MapperIsBlacklisted => 31,
