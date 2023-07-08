@@ -91,7 +91,7 @@ async fn main() {
 * `rustls-webpki-roots` (*default*): [`rustls`] using [`webpki-roots`] for root certificates
 
 [`o!rdr`]: https://ordr.issou.best/
-[`osu`]: https://osu.ppy.sh/home
+[`osu!`]: https://osu.ppy.sh/home
 [`native-tls`]: https://crates.io/crates/native-tls
 [`rustls`]: https://crates.io/crates/rustls
 [`webpki-roots`]: https://crates.io/crates/webpki-roots
