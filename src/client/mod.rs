@@ -32,9 +32,9 @@ const ROSU_RENDER_USER_AGENT: &str = concat!("rosu-render (", env!("CARGO_PKG_VE
 
 type HttpClient = HyperClient<Connector>;
 
-/// Client to access the o!rdr API and websocket.
+/// Client to access the o!rdr API.
 ///
-/// Cheap to clone as the underlying http client and websocket will be re-used.
+/// Cheap to clone.
 #[derive(Clone)]
 pub struct OrdrClient {
     inner: Arc<OrdrRef>,
@@ -49,6 +49,11 @@ struct OrdrRef {
 }
 
 impl OrdrClient {
+    /// Create a new [`OrdrClient`] based on a default [`OrdrClientBuilder`].
+    pub fn new() -> Self {
+        Self::builder().build()
+    }
+
     /// Create a new builder to create an [`OrdrClient`].
     pub fn builder() -> OrdrClientBuilder {
         OrdrClientBuilder::new()
