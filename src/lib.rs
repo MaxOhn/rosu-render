@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+#![deny(clippy::all, nonstandard_style, rust_2018_idioms, unused, warnings)]
 
 mod routing;
 mod util;

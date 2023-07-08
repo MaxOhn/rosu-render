@@ -55,7 +55,7 @@ impl<T> OrdrFuture<T> {
 
     fn await_ratelimit(
         mut ratelimit_opt: Pin<&mut Option<AcquireOwned>>,
-        cx: &mut Context,
+        cx: &mut Context<'_>,
     ) -> Poll<()> {
         if let Some(ratelimit) = ratelimit_opt.as_mut().as_pin_mut() {
             match ratelimit.poll(cx) {
