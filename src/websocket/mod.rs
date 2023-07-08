@@ -23,6 +23,11 @@ mod reconnect;
 pub mod error;
 pub mod event;
 
+/// Connection to the o!rdr websocket.
+///
+/// Await events with [`OrdrWebsocket::next_event`].
+///
+/// To gracefully shut the connection down, use [`OrdrWebsocket::disconnect`].
 pub struct OrdrWebsocket {
     engineio: EngineIo,
     reconnect: Reconnect,
