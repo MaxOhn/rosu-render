@@ -113,94 +113,143 @@ impl Display for RenderResolution {
 #[derive(Clone, Debug, Serialize)]
 pub struct RenderOptions {
     pub resolution: RenderResolution,
+    /// The global volume for the video, in percent, from 0 to 100.
     #[serde(rename = "globalVolume")]
     pub global_volume: u8,
+    /// The music volume for the video, in percent, from 0 to 100.
     #[serde(rename = "musicVolume")]
     pub music_volume: u8,
+    /// The hitsounds volume for the video, in percent, from 0 to 100.
     #[serde(rename = "hitsoundVolume")]
     pub hitsound_volume: u8,
+    /// Show the hit error meter.
     #[serde(rename = "showHitErrorMeter")]
     pub show_hit_error_meter: bool,
+    /// Show the unstable rate, only takes effect if `show_hit_error_meter` is set to true.
     #[serde(rename = "showUnstableRate")]
     pub show_unstable_rate: bool,
+    /// Show the score.
     #[serde(rename = "showScore")]
     pub show_score: bool,
+    /// Show the HP bar.
     #[serde(rename = "showHPBar")]
     pub show_hp_bar: bool,
+    /// Show the combo counter.
     #[serde(rename = "showComboCounter")]
     pub show_combo_counter: bool,
+    /// Show the PP Counter or not.
     #[serde(rename = "showPPCounter")]
     pub show_pp_counter: bool,
-    #[serde(rename = "showKeyOverlay")]
-    pub show_key_overlay: bool,
+    /// Show the scoreboard or not.
     #[serde(rename = "showScoreboard")]
     pub show_scoreboard: bool,
+    /// Show the playfield borders or not.
     #[serde(rename = "showBorders")]
     pub show_borders: bool,
+    /// Show the mods used during the game or not.
     #[serde(rename = "showMods")]
     pub show_mods: bool,
+    /// Show the result screen or not.
     #[serde(rename = "showResultScreen")]
     pub show_result_screen: bool,
+    /// Use the skin cursor or not. If not, danser cursor will be used.
     #[serde(rename = "useSkinCursor")]
     pub use_skin_cursor: bool,
+    /// Use the skin combo colors or not.
+    #[serde(rename = "useSkinColors")]
+    pub use_skin_colors: bool,
+    /// Use skin hitsounds, if false beatmap hitsounds will be used.
     #[serde(rename = "useSkinHitsounds")]
     pub use_skin_hitsounds: bool,
+    /// Use the beatmap combo colors or not, overrides useSkinColors if true.
     #[serde(rename = "useBeatmapColors")]
     pub use_beatmap_colors: bool,
+    /// Scale cursor to circle size. Does not do anything at the moment.
     #[serde(rename = "cursorScaleToCS")]
     pub cursor_scale_to_cs: bool,
+    /// Makes the cursor rainbow, only takes effect if `use_skin_cursor` is set to false.
     #[serde(rename = "cursorRainbow")]
     pub cursor_rainbow: bool,
+    /// Have a glow with the trail or not.
     #[serde(rename = "cursorTrailGlow")]
     pub cursor_trail_glow: bool,
+    /// Draw follow points between objects or not.
     #[serde(rename = "drawFollowPoints")]
     pub draw_follow_points: bool,
-    #[serde(rename = "drawComboNumbers")]
-    pub draw_combo_numbers: bool,
-    #[serde(rename = "cursorSize")]
-    pub cursor_size: f32,
-    #[serde(rename = "cursorTrail")]
-    pub cursor_trail: bool,
+    /// Scale objects to the beat.
     #[serde(rename = "scaleToTheBeat")]
     pub beat_scaling: bool,
+    /// Merge sliders or not.
     #[serde(rename = "sliderMerge")]
     pub slider_merge: bool,
+    /// Makes the objects rainbow, overrides `use_skin_colors` and `use_beatmap_colors`.
     #[serde(rename = "objectsRainbow")]
     pub objects_rainbow: bool,
+    /// Makes the objects flash to the beat.
     #[serde(rename = "objectsFlashToTheBeat")]
     pub flash_objects: bool,
+    /// Makes the slider body have the same color as the hit circles.
     #[serde(rename = "useHitCircleColor")]
     pub use_slider_hitcircle_color: bool,
+    /// Display a 5 second seizure warning before the video.
     #[serde(rename = "seizureWarning")]
     pub seizure_warning: bool,
+    /// Load the background storyboard.
     #[serde(rename = "loadStoryboard")]
     pub load_storyboard: bool,
+    /// Load the background video (`load_storyboard` has to be set to true).
     #[serde(rename = "loadVideo")]
     pub load_video: bool,
+    /// Background dim for the intro, in percent, from 0 to 100.
     #[serde(rename = "introBGDim")]
     pub intro_bg_dim: u8,
+    /// Background dim in game, in percent, from 0 to 100.
     #[serde(rename = "inGameBGDim")]
     pub ingame_bg_dim: u8,
+    /// Background dim in break, in percent, from 0 to 100.
     #[serde(rename = "breakBGDim")]
     pub break_bg_dim: u8,
+    /// Adds a parallax effect.
     #[serde(rename = "BGParallax")]
     pub bg_parallax: bool,
+    /// Show danser logo on the intro.
     #[serde(rename = "showDanserLogo")]
     pub show_danser_logo: bool,
+    /// Skip the intro or not.
     #[serde(rename = "skip")]
     pub skip_intro: bool,
+    /// Show cursor ripples when keypress.
     #[serde(rename = "cursorRipples")]
     pub cursor_ripples: bool,
+    /// Set the cursor size, multiplier from 0.5 to 2.
+    #[serde(rename = "cursorSize")]
+    pub cursor_size: f32,
+    /// Show the cursor trail or not.
+    #[serde(rename = "cursorTrail")]
+    pub cursor_trail: bool,
+    /// Show the combo numbers in objects.
+    #[serde(rename = "drawComboNumbers")]
+    pub draw_combo_numbers: bool,
+    /// Have slider snaking in.
     #[serde(rename = "sliderSnakingIn")]
     pub slider_snaking_in: bool,
+    /// Have slider snaking out.
     #[serde(rename = "sliderSnakingOut")]
     pub slider_snaking_out: bool,
+    /// Shows a hit counter (100, 50, miss) below the PP counter.
     #[serde(rename = "showHitCounter")]
     pub show_hit_counter: bool,
+    /// Show the key overlay or not.
+    #[serde(rename = "showKeyOverlay")]
+    pub show_key_overlay: bool,
+    /// Show avatars on the left of the username of a player on the scoreboard.
+    /// May break some skins because the width of the scoreboard increases.
     #[serde(rename = "showAvatarsOnScoreboard")]
     pub show_avatars_on_scoreboard: bool,
+    /// Show the Aim Error Meter or not.
     #[serde(rename = "showAimErrorMeter")]
     pub show_aim_error_meter: bool,
+    /// Play nightcore hitsounds or not.
     #[serde(rename = "playNightcoreSamples")]
     pub play_nightcore_samples: bool,
 }
@@ -224,6 +273,7 @@ impl Default for RenderOptions {
             show_mods: true,
             show_result_screen: true,
             use_skin_cursor: true,
+            use_skin_colors: false,
             use_skin_hitsounds: true,
             use_beatmap_colors: true,
             cursor_scale_to_cs: false,
