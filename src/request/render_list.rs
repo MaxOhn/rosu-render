@@ -24,7 +24,7 @@ struct GetRenderListFields<'a> {
     mapset_id: Option<u32>,
 }
 
-// TODO: docs
+/// Get a [`RenderList`].
 pub struct GetRenderList<'a> {
     ordr: &'a OrdrClient,
     fields: GetRenderListFields<'a>,

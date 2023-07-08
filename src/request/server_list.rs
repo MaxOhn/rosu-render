@@ -4,7 +4,7 @@ use crate::{model::RenderServers, request::Request, routing::Route, ClientError,
 
 use super::OrdrFuture;
 
-// TODO: docs
+/// Get [`RenderServers`].
 pub struct GetServerList<'a> {
     ordr: &'a OrdrClient,
 }

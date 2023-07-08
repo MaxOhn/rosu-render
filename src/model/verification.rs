@@ -1,5 +1,7 @@
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 
+/// Specifying your verification key will allow you to bypass the default ratelimit of one render per five minutes.
+/// Alternatively, you can specify a dev mode to simulate events and not spam the real backend with requests while testing things.
 #[derive(Clone)]
 pub enum Verification {
     /// Verification key assigned by the o!rdr dev. DM MasterIO#4588 on Discord to get one.

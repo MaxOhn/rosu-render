@@ -11,7 +11,7 @@ struct GetSkinCustomFields {
     id: u32,
 }
 
-// TODO: docs
+/// Get [`SkinInfo`] of a custom skin.
 pub struct GetSkinCustom<'a> {
     ordr: &'a OrdrClient,
     fields: GetSkinCustomFields,

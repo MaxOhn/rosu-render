@@ -4,7 +4,7 @@ use crate::{model::ServerOnlineCount, request::Request, routing::Route, ClientEr
 
 use super::OrdrFuture;
 
-// TODO: docs
+/// Get [`ServerOnlineCount`].
 pub struct GetServerOnlineCount<'a> {
     ordr: &'a OrdrClient,
 }

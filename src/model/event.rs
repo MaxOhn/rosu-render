@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 use crate::{client::error::ErrorCode, request::Requestable, ClientError};
 
+/// Deserialized [`Event`](crate::model::Event) received through the websocket.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Event {

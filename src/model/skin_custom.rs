@@ -3,6 +3,7 @@ use serde::Deserialize;
 
 use crate::{request::Requestable, ClientError};
 
+/// Information about a custom skin.
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 pub struct SkinInfo {
     /// The name of the skin.

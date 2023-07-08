@@ -14,7 +14,7 @@ struct GetSkinListFields<'a> {
     search: Option<&'a str>,
 }
 
-// TODO: docs
+/// Get a [`SkinList`].
 pub struct GetSkinList<'a> {
     ordr: &'a OrdrClient,
     fields: GetSkinListFields<'a>,

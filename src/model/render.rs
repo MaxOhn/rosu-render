@@ -110,6 +110,7 @@ impl Display for RenderResolution {
     }
 }
 
+/// Customize danser settings when rendering.
 #[derive(Clone, Debug, Serialize)]
 pub struct RenderOptions {
     pub resolution: RenderResolution,
