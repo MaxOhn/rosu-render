@@ -1,11 +1,14 @@
 [package]
-name       = "rosu-render"
-version    = "0.1.0"
-authors    = ["MaxOhn <ohn.m@hotmail.de>"]
-edition    = "2021"
-readme     = "README.md"
-repository = "https://github.com/MaxOhn/rosu-render"
-license    = "MIT"
+name          = "rosu-render"
+version       = "0.1.0"
+authors       = ["MaxOhn <ohn.m@hotmail.de>"]
+edition       = "2021"
+description   = "An o!rdr wrapper to render osu! replays"
+readme        = "README.md"
+repository    = "https://github.com/MaxOhn/rosu-render"
+license       = "MIT"
+keywords      = ["ordr", "osu"]
+documentation = "https://docs.rs/rosu-render"
 
 [dependencies]
 bytes = { version = "1.4" }
