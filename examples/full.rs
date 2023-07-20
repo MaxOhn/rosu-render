@@ -2,11 +2,7 @@
 //! and also handles events from the [`OrdrWebsocket`] specifically by subscribing
 //! to certain render ids and only forwarding interesting events of those ids.
 
-use std::{
-    collections::HashMap,
-    error::Error as StdError,
-    sync::{Arc, RwLock},
-};
+use std::{collections::HashMap, error::Error as StdError, sync::Arc};
 
 use rosu_render::{
     model::{RenderDone, RenderProgress, RenderSkinOption, Verification},
@@ -14,7 +10,7 @@ use rosu_render::{
     OrdrClient, OrdrWebsocket, WebsocketError,
 };
 use tokio::{
-    sync::{mpsc, oneshot},
+    sync::{mpsc, oneshot, RwLock},
     task::JoinHandle,
 };
 
@@ -51,7 +47,7 @@ impl Ordr {
     //   - create a new mpsc channel
     //   - put its sender into our `senders` map for the given render id
     //   - then return the receiver
-    pub fn subscribe_render_id(&self, render_id: u32) -> OrdrReceivers {
+    pub async fn subscribe_render_id(&self, render_id: u32) -> OrdrReceivers {
         let (done_tx, done_rx) = mpsc::channel(1);
         let (progress_tx, progress_rx) = mpsc::channel(1);
 
@@ -65,18 +61,18 @@ impl Ordr {
             progress: progress_rx,
         };
 
-        self.senders.write().unwrap().insert(render_id, senders);
+        self.senders.write().await.insert(render_id, senders);
 
         receivers
     }
 
     // To unsubscribe, we simple remove the render id entry in our `senders` map
-    pub fn unsubscribe_render_id(&self, render_id: u32) {
-        self.senders.write().unwrap().remove(&render_id);
+    pub async fn unsubscribe_render_id(&self, render_id: u32) {
+        self.senders.write().await.remove(&render_id);
     }
 
     pub async fn new() -> Result<Self, WebsocketError> {
-        // First connect to the websocket and creat the client
+        // First connect to the websocket and create the client
         let websocket = OrdrWebsocket::connect().await?;
 
         // When running on debug, we should only *simulate* render commissions
@@ -120,7 +116,14 @@ impl Ordr {
             // Either receive the next event or get notified of a shutdown
             let event_result = tokio::select! {
                 event_result = websocket.next_event() => event_result,
-                _ = &mut shutdown_rx => return,
+                _ = &mut shutdown_rx => match websocket.disconnect().await {
+                    Ok(_) => return,
+                    Err(err) => {
+                        println!("Failed to disconnect websocket gracefully: {err}");
+
+                        return
+                    }
+                },
             };
 
             // Keep awaiting the next websocket event
@@ -128,14 +131,14 @@ impl Ordr {
                 // We're only interested in `done` and `progress` events so only check for those
                 Ok(event) => match event {
                     RawEvent::RenderDone(event) => {
-                        let guard = senders.read().unwrap();
+                        let guard = senders.read().await;
 
                         // Check if the event's render id is of interest
                         if let Some(senders) = guard.get(&event.render_id) {
                             // If so, deserialize the event and forward it into the channel
                             match event.deserialize() {
                                 Ok(done) => {
-                                    let _ = senders.done.send(done);
+                                    let _ = senders.done.send(done).await;
                                 }
                                 Err(err) => println!("Failed to deserialize RenderDone: {err}"),
                             }
@@ -143,12 +146,12 @@ impl Ordr {
                     }
                     // And do the same thing for `progress` events
                     RawEvent::RenderProgress(event) => {
-                        let guard = senders.read().unwrap();
+                        let guard = senders.read().await;
 
                         if let Some(senders) = guard.get(&event.render_id) {
                             match event.deserialize() {
                                 Ok(progress) => {
-                                    let _ = senders.progress.send(progress);
+                                    let _ = senders.progress.send(progress).await;
                                 }
                                 Err(err) => {
                                     println!("Failed to deserialize RenderProgress: {err}")
@@ -181,7 +184,7 @@ async fn main() -> Result<(), Box<dyn StdError>> {
     let ordr = Ordr::new().await?;
 
     // Then we commission a render
-    let replay = tokio::fs::read("./replay.osr").await?;
+    let replay = tokio::fs::read("./assets/2283307549.osr").await?;
     let skin = RenderSkinOption::default();
 
     let commission = ordr
@@ -190,7 +193,7 @@ async fn main() -> Result<(), Box<dyn StdError>> {
         .await?;
 
     // Then we subscribe to its render id
-    let mut receivers = ordr.subscribe_render_id(commission.render_id);
+    let mut receivers = ordr.subscribe_render_id(commission.render_id).await;
 
     // And now we listen to events until the render is done
     loop {
@@ -214,6 +217,9 @@ async fn main() -> Result<(), Box<dyn StdError>> {
         // and keep looping. If you stick to this example, you probably also
         // want to listen to RenderFailed events.
     }
+
+    // Not necessary to unsubscribe in this example but let's do it anyway
+    ordr.unsubscribe_render_id(commission.render_id).await;
 
     // We're done, let's disconnect gracefully
     ordr.disconnect().await;
