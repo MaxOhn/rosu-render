@@ -31,7 +31,7 @@ serde_urlencoded = { version = "0.7" }
 thiserror = { version = "1.0" }
 time = { version = "0.3", features = ["formatting", "parsing"] }
 tokio = { version = "1.0", default-features = false, features = ["net"] }
-tokio-tungstenite = { version = "0.19", default-features = false, features = ["connect", "handshake"] }
+tokio-tungstenite = { version = "0.20", default-features = false, features = ["connect", "handshake"] }
 tracing = { version = "0.1", default-features = false, features = ["std", "attributes"] }
 url = { version = "2.0" }
 webpki-roots = { version = "0.25", default-features = false, optional = true }

@@ -6,11 +6,15 @@ use url::Url;
 
 use super::error::EngineIoError;
 
+// `max_send_queue` is currently marked deprecated and does nothing anymore
+#[allow(deprecated)]
 const WEBSOCKET_CONFIG: WebSocketConfig = WebSocketConfig {
     accept_unmasked_frames: false,
     max_frame_size: None,
     max_message_size: None,
     max_send_queue: None,
+    write_buffer_size: 16 * 1024, // shrunk down default values
+    max_write_buffer_size: 64 * 1024,
 };
 
 pub(super) type Connection = WebSocketStream<MaybeTlsStream<TcpStream>>;
