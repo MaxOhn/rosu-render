@@ -51,7 +51,7 @@ struct OrdrRef {
 impl OrdrClient {
     /// Create a new [`OrdrClient`] based on a default [`OrdrClientBuilder`].
     pub fn new() -> Self {
-        Self::builder().build()
+        Self::default()
     }
 
     /// Create a new builder to create an [`OrdrClient`].
@@ -164,5 +164,11 @@ impl OrdrClient {
             Arc::clone(&self.inner.banned),
             self.inner.ratelimiter.get(ratelimiter).acquire_owned(1),
         ))
+    }
+}
+
+impl Default for OrdrClient {
+    fn default() -> Self {
+        Self::builder().build()
     }
 }
