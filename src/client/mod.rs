@@ -10,6 +10,7 @@ use std::sync::{
 };
 
 use hyper::{
+    client::ResponseFuture,
     header::{CONTENT_LENGTH, CONTENT_TYPE, USER_AGENT},
     http::HeaderValue,
     Body, Client as HyperClient, Method, Request as HyperRequest,
@@ -25,6 +26,7 @@ use crate::{
         CommissionRender, GetRenderList, GetServerList, GetServerOnlineCount, GetSkinCustom,
         GetSkinList, OrdrFuture, Request,
     },
+    util::multipart::Form,
 };
 
 const BASE_URL: &str = "https://apis.issou.best/ordr/";
@@ -115,16 +117,31 @@ impl OrdrClient {
     }
 
     fn try_request<T>(&self, req: Request) -> Result<OrdrFuture<T>, ClientError> {
-        if self.inner.banned.load(Ordering::Relaxed) {
-            return Err(ClientError::Unauthorized);
-        }
-
         let Request {
             form,
             method,
             path,
             ratelimiter,
         } = req;
+
+        let inner = self.try_request_raw(form, method, path)?;
+
+        Ok(OrdrFuture::new(
+            Box::pin(inner),
+            Arc::clone(&self.inner.banned),
+            self.inner.ratelimiter.get(ratelimiter).acquire_owned(1),
+        ))
+    }
+
+    fn try_request_raw(
+        &self,
+        form: Option<Form>,
+        method: Method,
+        path: String,
+    ) -> Result<ResponseFuture, ClientError> {
+        if self.inner.banned.load(Ordering::Relaxed) {
+            return Err(ClientError::Unauthorized);
+        }
 
         let mut url = String::with_capacity(BASE_URL.len() + path.len());
         url.push_str(BASE_URL);
@@ -157,13 +174,7 @@ impl OrdrClient {
             source: Box::new(source),
         })?;
 
-        let inner = self.inner.http.request(req);
-
-        Ok(OrdrFuture::new(
-            Box::pin(inner),
-            Arc::clone(&self.inner.banned),
-            self.inner.ratelimiter.get(ratelimiter).acquire_owned(1),
-        ))
+        Ok(self.inner.http.request(req))
     }
 }
 
