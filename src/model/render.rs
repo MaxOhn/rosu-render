@@ -56,8 +56,6 @@ pub struct Render {
     #[serde(rename = "needToRedownload")]
     pub need_to_redownload: bool,
     pub skin: Box<str>,
-    #[serde(rename = "hasCursorMiddle")]
-    pub has_cursor_middle: bool,
     #[serde(rename = "motionBlur960fps")]
     pub motion_blur: bool,
     #[serde(rename = "renderStartTime", deserialize_with = "deserialize_datetime")]

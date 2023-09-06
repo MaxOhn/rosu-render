@@ -30,7 +30,6 @@ pub struct Skin {
     pub low_res_preview: Box<str>,
     pub grid_preview: Box<str>,
     pub id: u32,
-    pub has_cursor_middle: bool,
     pub author: Box<str>,
     pub modified: bool,
     pub version: Box<str>,
