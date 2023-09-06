@@ -4,13 +4,16 @@ use std::{
 };
 
 use hyper::{body::Bytes, StatusCode};
-use serde::{Deserialize, Serialize};
+use serde::{
+    de::{Error as DeError, IgnoredAny, MapAccess, Unexpected, Visitor},
+    Deserialize, Deserializer, Serialize,
+};
 use time::OffsetDateTime;
 
 use crate::{request::Requestable, util::datetime::deserialize_datetime, ClientError};
 
 /// A list of [`Render`].
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct RenderList {
     /// Array of renders returned by the api
     pub renders: Vec<Render>,
@@ -26,7 +29,7 @@ impl Requestable for RenderList {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Render {
     #[serde(rename = "renderID")]
     pub id: u32,
@@ -55,7 +58,6 @@ pub struct Render {
     pub map_id: u32,
     #[serde(rename = "needToRedownload")]
     pub need_to_redownload: bool,
-    pub skin: Box<str>,
     #[serde(rename = "motionBlur960fps")]
     pub motion_blur: bool,
     #[serde(rename = "renderStartTime", deserialize_with = "deserialize_datetime")]
@@ -73,9 +75,13 @@ pub struct Render {
     #[serde(rename = "replayMods")]
     pub replay_mods: Box<str>,
     pub removed: bool,
+    #[serde(flatten)]
+    pub options: RenderOptions,
+    #[serde(flatten)]
+    pub skin: RenderSkinOption<'static>,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum RenderResolution {
     /// 720x480 (30fps)
     #[serde(rename = "720x480")]
@@ -109,7 +115,7 @@ impl Display for RenderResolution {
 }
 
 /// Customize danser settings when rendering.
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RenderOptions {
     pub resolution: RenderResolution,
     /// The global volume for the video, in percent, from 0 to 100.
@@ -352,6 +358,55 @@ macro_rules! impl_from_name {
 }
 
 impl_from_name!(&'a str, &'a String, String, Cow<'a, str>);
+
+impl<'de> Deserialize<'de> for RenderSkinOption<'static> {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        struct SkinVisitor;
+
+        impl<'de> Visitor<'de> for SkinVisitor {
+            type Value = RenderSkinOption<'static>;
+
+            fn expecting(&self, f: &mut Formatter<'_>) -> FmtResult {
+                f.write_str("`skin` and `customSkin` fields")
+            }
+
+            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+                let mut custom_skin: Option<bool> = None;
+                let mut skin: Option<String> = None;
+
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        "customSkin" => custom_skin = Some(map.next_value()?),
+                        "skin" => skin = Some(map.next_value()?),
+                        _ => {
+                            let _: IgnoredAny = map.next_value()?;
+                        }
+                    }
+                }
+
+                let custom_skin =
+                    custom_skin.ok_or_else(|| DeError::missing_field("customSkin"))?;
+                let skin = skin.ok_or_else(|| DeError::missing_field("skin"))?;
+
+                let skin = if custom_skin {
+                    let id = skin
+                        .parse()
+                        .map_err(|_| DeError::invalid_value(Unexpected::Str(&skin), &"a u32"))?;
+
+                    RenderSkinOption::Custom { id }
+                } else {
+                    RenderSkinOption::Official {
+                        name: Cow::Owned(skin),
+                    }
+                };
+
+                Ok(skin)
+            }
+        }
+
+        d.deserialize_map(SkinVisitor)
+    }
+}
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct RenderServers {
