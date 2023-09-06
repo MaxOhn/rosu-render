@@ -251,6 +251,15 @@ pub struct RenderOptions {
     /// Play nightcore hitsounds or not.
     #[serde(rename = "playNightcoreSamples")]
     pub play_nightcore_samples: bool,
+    /// Show the strain graph or not.
+    #[serde(rename = "showStrainGraph")]
+    pub show_strain_graph: bool,
+    /// Show the slider breaks count in the hit counter.
+    #[serde(rename = "showSliderBreaks")]
+    pub show_slider_breaks: bool,
+    /// Ignores fail in the replay or not.
+    #[serde(rename = "ignoreFail")]
+    pub ignore_fail: bool,
 }
 
 impl Default for RenderOptions {
@@ -303,6 +312,9 @@ impl Default for RenderOptions {
             show_avatars_on_scoreboard: false,
             show_aim_error_meter: false,
             play_nightcore_samples: true,
+            show_strain_graph: false,
+            show_slider_breaks: false,
+            ignore_fail: false,
         }
     }
 }
