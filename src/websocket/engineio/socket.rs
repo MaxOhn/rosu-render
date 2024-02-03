@@ -14,7 +14,8 @@ use super::{
     tls::{Connection, TlsContainer},
 };
 
-const WS_URL: &str = "https://ordr-ws.issou.best";
+const WS_URL: &str = "https://apis.issou.best";
+const WS_PATH: &str = "/ordr/ws/";
 const ENGINE_IO_VERSION: &str = "4";
 
 pub(super) struct Socket {
@@ -26,7 +27,7 @@ pub(super) struct Socket {
 impl Socket {
     pub(super) async fn new() -> Result<Self, EngineIoError> {
         let mut url = Url::parse(WS_URL).expect("WS_URL is valid url");
-        url.set_path("/socket.io/");
+        url.set_path(WS_PATH);
         url.query_pairs_mut().append_pair("EIO", ENGINE_IO_VERSION);
 
         let timeout = Duration::from_secs(30);

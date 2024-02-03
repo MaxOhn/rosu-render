@@ -7,7 +7,7 @@ use rosu_render::{
 };
 
 #[tokio::test]
-async fn test_render_success() {
+async fn render_success() {
     let replay_file = tokio::fs::read("./assets/2283307549.osr").await.unwrap();
 
     let mut websocket = OrdrWebsocket::connect().await.unwrap();
@@ -51,7 +51,7 @@ async fn test_render_success() {
 }
 
 #[tokio::test]
-async fn test_custom_skin_error() {
+async fn custom_skin_error() {
     let client = OrdrClient::builder().build();
 
     let err = client.custom_skin_info(46).await.unwrap_err();
