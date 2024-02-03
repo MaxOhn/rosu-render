@@ -52,6 +52,7 @@ struct OrdrRef {
 
 impl OrdrClient {
     /// Create a new [`OrdrClient`] based on a default [`OrdrClientBuilder`].
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -124,7 +125,7 @@ impl OrdrClient {
             ratelimiter,
         } = req;
 
-        let inner = self.try_request_raw(form, method, path)?;
+        let inner = self.try_request_raw(form, method, &path)?;
 
         Ok(OrdrFuture::new(
             Box::pin(inner),
@@ -137,7 +138,7 @@ impl OrdrClient {
         &self,
         form: Option<Form>,
         method: Method,
-        path: String,
+        path: &str,
     ) -> Result<ResponseFuture, ClientError> {
         if self.inner.banned.load(Ordering::Relaxed) {
             return Err(ClientError::Unauthorized);
@@ -145,7 +146,7 @@ impl OrdrClient {
 
         let mut url = String::with_capacity(BASE_URL.len() + path.len());
         url.push_str(BASE_URL);
-        url.push_str(&path);
+        url.push_str(path);
         debug!(?url);
 
         debug_assert!(method != Method::POST || form.is_some());

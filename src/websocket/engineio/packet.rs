@@ -60,7 +60,7 @@ impl Packet {
         bytes
     }
 
-    pub(crate) fn from_bytes(bytes: Bytes) -> Result<Self, EngineIoError> {
+    pub(crate) fn from_bytes(bytes: &Bytes) -> Result<Self, EngineIoError> {
         let packet_id: PacketId = bytes
             .first()
             .copied()

@@ -17,6 +17,7 @@ enum ReplaySource<'a> {
 /// Commission a render job to o!rdr.
 ///
 /// If successful, progress of the rendering can be tracking through the [`OrdrWebsocket`](crate::OrdrWebsocket).
+#[must_use]
 pub struct CommissionRender<'a> {
     ordr: &'a OrdrClient,
     replay_source: ReplaySource<'a>,

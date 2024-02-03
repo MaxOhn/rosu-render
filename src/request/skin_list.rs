@@ -15,6 +15,7 @@ struct GetSkinListFields<'a> {
 }
 
 /// Get a [`SkinList`].
+#[must_use]
 pub struct GetSkinList<'a> {
     ordr: &'a OrdrClient,
     fields: GetSkinListFields<'a>,

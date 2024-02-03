@@ -98,6 +98,7 @@ pub enum RenderResolution {
 }
 
 impl RenderResolution {
+    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Self::SD480 => "720x480",

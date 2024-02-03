@@ -16,6 +16,7 @@ pub enum Verification {
 }
 
 impl Verification {
+    #[must_use]
     pub fn as_str(&self) -> &str {
         match self {
             Self::Key(key) => key,

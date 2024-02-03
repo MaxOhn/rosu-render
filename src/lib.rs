@@ -1,5 +1,13 @@
 #![doc = include_str!("../README.md")]
-#![deny(clippy::all, nonstandard_style, rust_2018_idioms, unused, warnings)]
+#![warn(clippy::pedantic, nonstandard_style, rust_2018_idioms, unused)]
+#![allow(
+    clippy::module_name_repetitions,
+    clippy::explicit_iter_loop,
+    clippy::similar_names,
+    clippy::missing_errors_doc,
+    clippy::struct_excessive_bools,
+    clippy::cast_possible_truncation
+)]
 
 mod routing;
 mod util;

@@ -40,16 +40,14 @@ impl RawEvent {
         fn split_bytes(bytes: &[u8]) -> Option<(&[u8], &[u8])> {
             let comma_idx = bytes.iter().position(|&byte| byte == b',')?;
 
-            let ([b'[', b'"', prefix @ .., b'"'], [_, suffix @ .., b']']) = bytes.split_at(comma_idx) else {
+            let ([b'[', b'"', prefix @ .., b'"'], [_, suffix @ .., b']']) =
+                bytes.split_at(comma_idx)
+            else {
                 return None;
             };
 
             Some((prefix, suffix))
         }
-
-        let Some((event, payload)) = split_bytes(&bytes) else {
-            return Err(crate::WebsocketError::InvalidEvent(bytes));
-        };
 
         fn find_render_id(mut bytes: &[u8]) -> Option<u32> {
             loop {
@@ -67,11 +65,15 @@ impl RawEvent {
                     .iter()
                     .copied()
                     .take_while(u8::is_ascii_digit)
-                    .fold(0, |num, byte| num * 10 + (byte & 0xF) as u32);
+                    .fold(0, |num, byte| num * 10 + u32::from(byte & 0xF));
 
                 return Some(render_id);
             }
         }
+
+        let Some((event, payload)) = split_bytes(&bytes) else {
+            return Err(crate::WebsocketError::InvalidEvent(bytes));
+        };
 
         let payload_bytes = bytes.slice_ref(payload);
 

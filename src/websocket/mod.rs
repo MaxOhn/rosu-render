@@ -91,8 +91,8 @@ impl OrdrWebsocket {
         }
 
         let err = match self.engineio.reconnect().await {
-            Ok(_) => match self.open().await {
-                Ok(_) => return Ok(()),
+            Ok(()) => match self.open().await {
+                Ok(()) => return Ok(()),
                 Err(err) => err,
             },
             Err(err) => WebsocketError::EngineIo(err),

@@ -56,6 +56,7 @@ mod r#impl {
     pub(super) type TlsConnector = Arc<ClientConfig>;
 
     #[cfg(any(feature = "rustls-native-roots", feature = "rustls-webpki-roots"))]
+    #[allow(clippy::unnecessary_wraps)]
     pub(super) fn new() -> Result<TlsContainer, EngineIoError> {
         let mut roots = rustls_tls::RootCertStore::empty();
 

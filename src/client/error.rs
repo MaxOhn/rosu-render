@@ -202,6 +202,7 @@ pub enum ErrorCode {
 }
 
 impl ErrorCode {
+    #[must_use]
     pub fn to_u8(self) -> u8 {
         match self {
             Self::EmergencyStop => 1,

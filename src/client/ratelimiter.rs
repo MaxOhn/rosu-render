@@ -9,13 +9,14 @@ pub(super) struct Ratelimiter {
     pub(super) send_render: Arc<RateLimiter>,
 }
 
+#[derive(Copy, Clone)]
 pub(crate) enum RatelimiterKind {
     General,
     SendRender,
 }
 
 impl Ratelimiter {
-    pub fn new(builder: RatelimitBuilder) -> Self {
+    pub fn new(builder: &RatelimitBuilder) -> Self {
         let RatelimitBuilder {
             interval,
             refill,
@@ -36,10 +37,10 @@ impl Ratelimiter {
             ),
             send_render: Arc::new(
                 RateLimiter::builder()
-                    .max(max as usize)
-                    .initial(max as usize)
-                    .refill(refill as usize)
-                    .interval(Duration::from_millis(interval))
+                    .max(*max as usize)
+                    .initial(*max as usize)
+                    .refill(*refill as usize)
+                    .interval(Duration::from_millis(*interval))
                     .build(),
             ),
         }

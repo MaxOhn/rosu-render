@@ -59,7 +59,7 @@ impl Socket {
             return Err(EngineIoError::InvalidHandshake(msg));
         };
 
-        let Packet { data, .. } = Packet::from_bytes(Bytes::from(text))?;
+        let Packet { data, .. } = Packet::from_bytes(&Bytes::from(text))?;
 
         let handshake: HandshakePacket = serde_json::from_slice(&data)
             .map_err(|source| EngineIoError::Deserialize { source, data })?;
@@ -90,7 +90,7 @@ impl Socket {
             trace!(?message, "Websocket message");
 
             match message {
-                Ok(Message::Text(text)) => return Packet::from_bytes(Bytes::from(text)).map(Some),
+                Ok(Message::Text(text)) => return Packet::from_bytes(&Bytes::from(text)).map(Some),
                 Ok(Message::Close(_)) => return Ok(None),
                 Ok(_) => {}
                 Err(err) => return Err(EngineIoError::WebsocketReceive(err)),

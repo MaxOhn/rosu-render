@@ -25,6 +25,7 @@ struct GetRenderListFields<'a> {
 }
 
 /// Get a [`RenderList`].
+#[must_use]
 pub struct GetRenderList<'a> {
     ordr: &'a OrdrClient,
     fields: GetRenderListFields<'a>,
@@ -62,14 +63,18 @@ impl<'a> GetRenderList<'a> {
         self
     }
 
-    /// Search by o!rdr username, can be used at the same time as replay_username.
+    /// Search by o!rdr username, can be used at the same time as [`replay_username`].
+    ///
+    /// [`replay_username`]: GetRenderList::replay_username
     pub fn ordr_username(&mut self, ordr_username: &'a str) -> &mut Self {
         self.fields.ordr_username = Some(ordr_username);
 
         self
     }
 
-    /// Search by replay username, can be used at the same time as ordr_username.
+    /// Search by replay username, can be used at the same time as [`ordr_username`].
+    ///
+    /// [`ordr_username`]: GetRenderList::ordr_username
     pub fn replay_username(&mut self, replay_username: &'a str) -> &mut Self {
         self.fields.replay_username = Some(replay_username);
 

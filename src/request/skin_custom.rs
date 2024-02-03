@@ -12,6 +12,7 @@ struct GetSkinCustomFields {
 }
 
 /// Get [`SkinInfo`] of a custom skin.
+#[must_use]
 pub struct GetSkinCustom<'a> {
     ordr: &'a OrdrClient,
     fields: GetSkinCustomFields,

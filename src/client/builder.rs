@@ -8,6 +8,7 @@ use super::{ratelimiter::Ratelimiter, OrdrClient, OrdrRef};
 
 /// A builder for [`OrdrClient`].
 #[derive(Default)]
+#[must_use]
 pub struct OrdrClientBuilder {
     verification: Option<Verification>,
     ratelimit: Option<RatelimitBuilder>,
@@ -20,6 +21,7 @@ impl OrdrClientBuilder {
     }
 
     //// Build an [`OrdrClient`].
+    #[must_use]
     pub fn build(self) -> OrdrClient {
         let connector = connector::create();
         let http = HyperClient::builder().build(connector);
@@ -53,7 +55,7 @@ impl OrdrClientBuilder {
         OrdrClient {
             inner: Arc::new(OrdrRef {
                 http,
-                ratelimiter: Ratelimiter::new(ratelimit),
+                ratelimiter: Ratelimiter::new(&ratelimit),
                 verification: self.verification,
                 banned: Arc::new(AtomicBool::new(false)),
             }),

@@ -16,7 +16,7 @@ impl<'de> Visitor<'de> for OffsetDateTimeVisitor {
     }
 
     fn visit_u64<E: DeError>(self, timestamp_ms: u64) -> Result<Self::Value, E> {
-        let timestamp_ns = timestamp_ms as i128 * 1_000_000;
+        let timestamp_ns = i128::from(timestamp_ms) * 1_000_000;
 
         OffsetDateTime::from_unix_timestamp_nanos(timestamp_ns).map_err(|_| {
             DeError::invalid_value(

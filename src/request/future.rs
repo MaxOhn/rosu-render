@@ -59,7 +59,7 @@ impl<T> OrdrFuture<T> {
     ) -> Poll<()> {
         if let Some(ratelimit) = ratelimit_opt.as_mut().as_pin_mut() {
             match ratelimit.poll(cx) {
-                Poll::Ready(_) => ratelimit_opt.set(None),
+                Poll::Ready(()) => ratelimit_opt.set(None),
                 Poll::Pending => return Poll::Pending,
             }
         }
