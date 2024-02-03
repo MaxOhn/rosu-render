@@ -2,7 +2,12 @@
 
   Nothing as of now
 
-# v0.2.0 (2023-09-06)
+# v0.2.1 (2024-02-03)
+
+- Now using ordr's new websocket url
+- Enforcing stricter coding standards
+
+## v0.2.0 (2023-09-06)
 
 - Breaking changes:
   - Removed `Skin::has_cursor_middle` and `Render::has_cursor_middle` ([#2])
