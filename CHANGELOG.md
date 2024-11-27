@@ -1,7 +1,7 @@
 # v0.3.0 (2024-11-27)
 
-- Fixed ban-handling; receiving an "unauthorized" response no longer makes all
-  future requests fail ([#3])
+- (Breaking change) Fixed ban-handling; receiving an "unauthorized" response no longer makes all
+  future requests fail; removed enum variant `ClientError::Unauthorized` ([#3])
 - Bumped `thiserror` dependency to `2.0`
 
 ## v0.2.1 (2024-02-03)
