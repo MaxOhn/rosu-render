@@ -54,8 +54,6 @@ pub enum ClientError {
     ServiceUnavailable { response: Response<Body> },
     #[error("Skin was not found (received a 404)")]
     SkinDeleted { error: SkinDeleted },
-    #[error("Banned from o!rdr. All future requests will fail.")]
-    Unauthorized,
 }
 
 impl ClientError {

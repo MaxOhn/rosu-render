@@ -2,10 +2,6 @@ use std::{
     future::Future,
     marker::PhantomData,
     pin::{pin, Pin},
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
     task::{Context, Poll},
 };
 
@@ -31,16 +27,11 @@ pub struct OrdrFuture<T> {
 }
 
 impl<T> OrdrFuture<T> {
-    pub(crate) const fn new(
-        fut: Pin<Box<HyperResponseFuture>>,
-        banned: Arc<AtomicBool>,
-        ratelimit: AcquireOwned,
-    ) -> Self {
+    pub(crate) const fn new(fut: Pin<Box<HyperResponseFuture>>, ratelimit: AcquireOwned) -> Self {
         Self {
             ratelimit: Some(ratelimit),
             state: OrdrFutureState::InFlight(InFlight {
                 fut,
-                banned,
                 phantom: PhantomData,
             }),
         }
@@ -163,7 +154,6 @@ impl<T: DeserializeOwned + Requestable> Future for Chunking<T> {
 struct InFlight<T> {
     #[pin]
     fut: Pin<Box<HyperResponseFuture>>,
-    banned: Arc<AtomicBool>,
     phantom: PhantomData<T>,
 }
 
@@ -185,7 +175,6 @@ impl<T: Requestable> Future for InFlight<T> {
 
         match status {
             StatusCode::TOO_MANY_REQUESTS => warn!("429 response: {response:?}"),
-            StatusCode::UNAUTHORIZED => this.banned.store(true, Ordering::Relaxed),
             StatusCode::SERVICE_UNAVAILABLE => {
                 return Poll::Ready(Err(ClientError::ServiceUnavailable { response }))
             }
