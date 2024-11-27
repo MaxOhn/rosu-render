@@ -1,8 +1,10 @@
-## Upcoming
+# v0.3.0 (2024-11-27)
 
-  Nothing as of now
+- Fixed ban-handling; receiving an "unauthorized" response no longer makes all
+  future requests fail ([#3])
+- Bumped `thiserror` dependency to `2.0`
 
-# v0.2.1 (2024-02-03)
+## v0.2.1 (2024-02-03)
 
 - Now using ordr's new websocket url
 - Enforcing stricter coding standards
@@ -22,3 +24,4 @@
 ## v0.1.0 (2023-07-20)
 
 [#2]: https://github.com/MaxOhn/rosu-render/pull/2
+[#3]: https://github.com/MaxOhn/rosu-render/pull/3
