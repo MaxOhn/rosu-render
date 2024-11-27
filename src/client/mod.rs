@@ -4,10 +4,7 @@ mod ratelimiter;
 
 pub mod error;
 
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
-};
+use std::sync::Arc;
 
 use hyper::{
     client::ResponseFuture,
@@ -45,8 +42,6 @@ pub struct OrdrClient {
 struct OrdrRef {
     pub(super) http: HttpClient,
     pub(super) ratelimiter: Ratelimiter,
-    // don't perform further requests when we're banned
-    pub(super) banned: Arc<AtomicBool>,
     pub(super) verification: Option<Verification>,
 }
 
@@ -129,7 +124,6 @@ impl OrdrClient {
 
         Ok(OrdrFuture::new(
             Box::pin(inner),
-            Arc::clone(&self.inner.banned),
             self.inner.ratelimiter.get(ratelimiter).acquire_owned(1),
         ))
     }
@@ -140,10 +134,6 @@ impl OrdrClient {
         method: Method,
         path: &str,
     ) -> Result<ResponseFuture, ClientError> {
-        if self.inner.banned.load(Ordering::Relaxed) {
-            return Err(ClientError::Unauthorized);
-        }
-
         let mut url = String::with_capacity(BASE_URL.len() + path.len());
         url.push_str(BASE_URL);
         url.push_str(path);

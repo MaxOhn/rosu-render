@@ -1,4 +1,4 @@
-use std::sync::{atomic::AtomicBool, Arc};
+use std::sync::Arc;
 
 use hyper::Client as HyperClient;
 
@@ -57,7 +57,6 @@ impl OrdrClientBuilder {
                 http,
                 ratelimiter: Ratelimiter::new(&ratelimit),
                 verification: self.verification,
-                banned: Arc::new(AtomicBool::new(false)),
             }),
         }
     }
