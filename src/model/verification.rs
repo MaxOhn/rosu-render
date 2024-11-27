@@ -31,9 +31,9 @@ impl Debug for Verification {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
             Self::Key(_) => f.debug_tuple("Key").field(&"<redacted>").finish(),
-            Self::DevModeSuccess => write!(f, "DevModeSuccess"),
-            Self::DevModeFail => write!(f, "DevModeFail"),
-            Self::DevModeWsFail => write!(f, "DevModeWsFail"),
+            Self::DevModeSuccess => f.write_str("DevModeSuccess"),
+            Self::DevModeFail => f.write_str("DevModeFail"),
+            Self::DevModeWsFail => f.write_str("DevModeWsFail"),
         }
     }
 }
