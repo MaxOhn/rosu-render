@@ -8,7 +8,7 @@ use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
 struct OffsetDateTimeVisitor;
 
-impl<'de> Visitor<'de> for OffsetDateTimeVisitor {
+impl Visitor<'_> for OffsetDateTimeVisitor {
     type Value = OffsetDateTime;
 
     fn expecting(&self, f: &mut Formatter<'_>) -> FmtResult {

@@ -248,7 +248,7 @@ impl<'de> Deserialize<'de> for ErrorCode {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         struct ErrorCodeVisitor;
 
-        impl<'de> Visitor<'de> for ErrorCodeVisitor {
+        impl Visitor<'_> for ErrorCodeVisitor {
             type Value = ErrorCode;
 
             fn expecting(&self, f: &mut Formatter<'_>) -> FmtResult {

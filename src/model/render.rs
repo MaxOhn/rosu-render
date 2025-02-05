@@ -336,7 +336,7 @@ pub enum RenderSkinOption<'a> {
     Custom { id: u32 },
 }
 
-impl<'a> Default for RenderSkinOption<'a> {
+impl Default for RenderSkinOption<'_> {
     fn default() -> Self {
         Self::Official {
             name: "default".into(),
@@ -344,7 +344,7 @@ impl<'a> Default for RenderSkinOption<'a> {
     }
 }
 
-impl<'a> From<u32> for RenderSkinOption<'a> {
+impl From<u32> for RenderSkinOption<'_> {
     fn from(id: u32) -> Self {
         Self::Custom { id }
     }
