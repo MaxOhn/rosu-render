@@ -269,10 +269,14 @@ pub struct RenderOptions {
     pub ignore_fail: bool,
 }
 
+impl RenderOptions {
+    pub const DEFAULT_RESOLUTION: RenderResolution = RenderResolution::HD720;
+}
+
 impl Default for RenderOptions {
     fn default() -> Self {
         Self {
-            resolution: RenderResolution::HD720,
+            resolution: Self::DEFAULT_RESOLUTION,
             global_volume: 50,
             music_volume: 50,
             hitsound_volume: 50,

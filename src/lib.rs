@@ -17,7 +17,7 @@ pub mod model;
 pub mod request;
 
 #[cfg(any(
-    feature = "native",
+    feature = "native-tls",
     feature = "rustls-native-roots",
     feature = "rustls-webpki-roots"
 ))]
@@ -29,7 +29,7 @@ extern crate tracing;
 pub use self::client::{error::ClientError, OrdrClient};
 
 #[cfg(any(
-    feature = "native",
+    feature = "native-tls",
     feature = "rustls-native-roots",
     feature = "rustls-webpki-roots"
 ))]

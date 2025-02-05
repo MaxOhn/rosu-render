@@ -1,4 +1,3 @@
-use rand::{distributions::Alphanumeric, Rng};
 use serde::Serialize;
 
 use crate::util::multipart::FormSerializer;
@@ -23,11 +22,10 @@ impl Form {
 
     pub fn new() -> Self {
         let mut boundary = [0; 16];
-        let mut rng = rand::thread_rng();
 
         boundary
             .iter_mut()
-            .for_each(|value| *value = rng.sample(Alphanumeric));
+            .for_each(|value| *value = fastrand::alphanumeric() as u8);
 
         let mut bytes = Vec::with_capacity(1024);
         bytes.extend_from_slice(Self::BOUNDARY_TERMINATOR);

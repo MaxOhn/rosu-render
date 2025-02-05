@@ -5,11 +5,9 @@ use std::{
     task::{Context, Poll},
 };
 
-use hyper::{
-    body::{self, Bytes},
-    client::ResponseFuture as HyperResponseFuture,
-    StatusCode,
-};
+use http_body_util::{combinators::Collect, BodyExt};
+use hyper::{body::Incoming, StatusCode};
+use hyper_util::client::legacy::ResponseFuture;
 use leaky_bucket::AcquireOwned;
 use pin_project::pin_project;
 use serde::de::DeserializeOwned;
@@ -27,7 +25,7 @@ pub struct OrdrFuture<T> {
 }
 
 impl<T> OrdrFuture<T> {
-    pub(crate) const fn new(fut: Pin<Box<HyperResponseFuture>>, ratelimit: AcquireOwned) -> Self {
+    pub(crate) const fn new(fut: Pin<Box<ResponseFuture>>, ratelimit: AcquireOwned) -> Self {
         Self {
             ratelimit: Some(ratelimit),
             state: OrdrFutureState::InFlight(InFlight {
@@ -117,7 +115,7 @@ enum OrdrFutureState<T> {
 #[pin_project]
 struct Chunking<T> {
     #[pin]
-    fut: Pin<Box<dyn Future<Output = Result<Bytes, ClientError>> + Send + Sync + 'static>>,
+    fut: Collect<Incoming>,
     status: StatusCode,
     phantom: PhantomData<T>,
 }
@@ -129,8 +127,10 @@ impl<T: DeserializeOwned + Requestable> Future for Chunking<T> {
         let this = self.project();
 
         let bytes = match this.fut.poll(cx) {
-            Poll::Ready(Ok(bytes)) => bytes,
-            Poll::Ready(Err(err)) => return Poll::Ready(Err(err)),
+            Poll::Ready(Ok(collected)) => collected.to_bytes(),
+            Poll::Ready(Err(source)) => {
+                return Poll::Ready(Err(ClientError::ChunkingResponse { source }))
+            }
             Poll::Pending => return Poll::Pending,
         };
 
@@ -153,7 +153,7 @@ impl<T: DeserializeOwned + Requestable> Future for Chunking<T> {
 #[pin_project]
 struct InFlight<T> {
     #[pin]
-    fut: Pin<Box<HyperResponseFuture>>,
+    fut: Pin<Box<ResponseFuture>>,
     phantom: PhantomData<T>,
 }
 
@@ -181,17 +181,8 @@ impl<T: Requestable> Future for InFlight<T> {
             _ => {}
         };
 
-        // body::to_bytes returns an anonymous future so we need to Box::pin it
-        let fut = async {
-            let body = response.into_body();
-
-            body::to_bytes(body)
-                .await
-                .map_err(|source| ClientError::ChunkingResponse { source })
-        };
-
         Poll::Ready(Ok(Chunking {
-            fut: Box::pin(fut),
+            fut: response.into_body().collect(),
             status,
             phantom: PhantomData,
         }))

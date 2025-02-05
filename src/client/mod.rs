@@ -6,12 +6,14 @@ pub mod error;
 
 use std::sync::Arc;
 
+use bytes::Bytes;
+use http_body_util::Full;
 use hyper::{
-    client::ResponseFuture,
     header::{CONTENT_LENGTH, CONTENT_TYPE, USER_AGENT},
     http::HeaderValue,
-    Body, Client as HyperClient, Method, Request as HyperRequest,
+    Method, Request as HyperRequest,
 };
+use hyper_util::client::legacy::{Client as HyperClient, ResponseFuture};
 
 pub use self::builder::OrdrClientBuilder;
 pub(crate) use self::ratelimiter::RatelimiterKind;
@@ -29,8 +31,6 @@ use crate::{
 const BASE_URL: &str = "https://apis.issou.best/ordr/";
 const ROSU_RENDER_USER_AGENT: &str = concat!("rosu-render (", env!("CARGO_PKG_VERSION"), ")");
 
-type HttpClient = HyperClient<Connector>;
-
 /// Client to access the o!rdr API.
 ///
 /// Cheap to clone.
@@ -40,7 +40,7 @@ pub struct OrdrClient {
 }
 
 struct OrdrRef {
-    pub(super) http: HttpClient,
+    pub(super) http: HyperClient<Connector, Full<Bytes>>,
     pub(super) ratelimiter: Ratelimiter,
     pub(super) verification: Option<Verification>,
 }
@@ -156,9 +156,9 @@ impl OrdrClient {
         }
 
         let try_req = if let Some(form) = form {
-            builder.body(Body::from(form.build()))
+            builder.body(Full::from(form.build()))
         } else {
-            builder.body(Body::empty())
+            builder.body(Full::default())
         };
 
         let req = try_req.map_err(|source| ClientError::BuildingRequest {

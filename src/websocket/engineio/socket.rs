@@ -2,21 +2,20 @@ use std::time::Duration;
 
 use bytes::Bytes;
 use futures::{SinkExt, StreamExt};
-use tokio::time::Instant;
-use tokio_tungstenite::tungstenite::Message;
+use tokio::{net::TcpStream, time::Instant};
+use tokio_websockets::{ClientBuilder, Connector, Limits, MaybeTlsStream, Message};
 use url::Url;
 
 use crate::websocket::engineio::packet::{Packet, PacketId};
 
-use super::{
-    error::EngineIoError,
-    packet::HandshakePacket,
-    tls::{Connection, TlsContainer},
-};
+use super::{error::EngineIoError, packet::HandshakePacket};
 
 const WS_URL: &str = "https://apis.issou.best";
 const WS_PATH: &str = "/ordr/ws/";
 const ENGINE_IO_VERSION: &str = "4";
+
+/// [`tokio_websockets`] library Websocket connection.
+type Connection = tokio_websockets::WebSocketStream<MaybeTlsStream<TcpStream>>;
 
 pub(super) struct Socket {
     connection: Connection,
@@ -48,7 +47,16 @@ impl Socket {
         url.query_pairs_mut().append_pair("transport", "websocket");
         url.set_scheme("wss").expect("wss is valid scheme");
 
-        let mut connection = TlsContainer::new()?.connect(&url).await?;
+        let tls = Connector::new().unwrap();
+
+        let (mut connection, _) = ClientBuilder::new()
+            .uri(url.as_str())
+            .unwrap()
+            .limits(Limits::unlimited())
+            .connector(&tls)
+            .connect()
+            .await
+            .map_err(EngineIoError::Reconnect)?;
 
         let msg = connection
             .next()
@@ -56,11 +64,8 @@ impl Socket {
             .expect("websocket is open at this point")
             .map_err(EngineIoError::WebsocketReceive)?;
 
-        let Message::Text(text) = msg else {
-            return Err(EngineIoError::InvalidHandshake(msg));
-        };
-
-        let Packet { data, .. } = Packet::from_bytes(&Bytes::from(text))?;
+        let bytes = Bytes::from(msg.into_payload());
+        let Packet { data, .. } = Packet::from_bytes(&bytes)?;
 
         let handshake: HandshakePacket = serde_json::from_slice(&data)
             .map_err(|source| EngineIoError::Deserialize { source, data })?;
@@ -71,32 +76,33 @@ impl Socket {
     }
 
     pub(super) async fn next_packet(&mut self) -> Result<Option<Packet>, EngineIoError> {
-        loop {
-            let timeout = self.heartbeat_deadline();
+        let timeout = self.heartbeat_deadline();
 
-            let message = match tokio::time::timeout_at(timeout, self.connection.next()).await {
-                Ok(Some(message)) => message,
-                Ok(None) => return Ok(None),
-                Err(_) => {
-                    trace!(
-                        interval = ?self.heartbeat_interval,
-                        since_last_heartbeat = ?self.last_heartbeat.elapsed(),
-                        "Heartbeat timed out",
-                    );
+        let message = match tokio::time::timeout_at(timeout, self.connection.next()).await {
+            Ok(Some(message)) => message,
+            Ok(None) => return Ok(None),
+            Err(_) => {
+                trace!(
+                    interval = ?self.heartbeat_interval,
+                    since_last_heartbeat = ?self.last_heartbeat.elapsed(),
+                    "Heartbeat timed out",
+                );
 
-                    return Ok(None);
-                }
-            };
-
-            trace!(?message, "Websocket message");
-
-            match message {
-                Ok(Message::Text(text)) => return Packet::from_bytes(&Bytes::from(text)).map(Some),
-                Ok(Message::Close(_)) => return Ok(None),
-                Ok(_) => {}
-                Err(err) => return Err(EngineIoError::WebsocketReceive(err)),
+                return Ok(None);
             }
+        };
+
+        trace!(?message, "Websocket message");
+
+        let message = message.map_err(EngineIoError::WebsocketReceive)?;
+
+        if message.is_close() {
+            return Ok(None);
         }
+
+        let bytes = Bytes::from(message.into_payload());
+
+        Packet::from_bytes(&bytes).map(Some)
     }
 
     pub(super) async fn emit(&mut self, packet: Packet) -> Result<(), EngineIoError> {
@@ -119,7 +125,7 @@ impl Socket {
 
     async fn emit_static(connection: &mut Connection, packet: Packet) -> Result<(), EngineIoError> {
         let msg = String::from_utf8(packet.to_bytes())
-            .map(Message::Text)
+            .map(Message::text)
             .map_err(|err| EngineIoError::InvalidUtf8(err.utf8_error()))?;
 
         trace!("Emitting packet {packet:?}");

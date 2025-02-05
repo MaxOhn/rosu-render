@@ -2,7 +2,6 @@ pub mod error;
 
 pub(crate) mod packet;
 pub(crate) mod socket;
-pub(crate) mod tls;
 
 use bytes::Bytes;
 

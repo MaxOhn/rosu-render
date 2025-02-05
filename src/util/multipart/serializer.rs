@@ -276,5 +276,8 @@ mod tests {
     #[test]
     fn test_form_serializer() {
         let _form = Form::serialize(&RenderOptions::default());
+
+        let bytes = String::from_utf8(_form.build()).unwrap();
+        println!("{bytes}");
     }
 }
