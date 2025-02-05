@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use hyper::Client as HyperClient;
+use hyper_util::rt::TokioExecutor;
 
 use crate::{client::connector, model::Verification};
 
@@ -24,7 +24,8 @@ impl OrdrClientBuilder {
     #[must_use]
     pub fn build(self) -> OrdrClient {
         let connector = connector::create();
-        let http = HyperClient::builder().build(connector);
+        let http =
+            hyper_util::client::legacy::Client::builder(TokioExecutor::new()).build(connector);
 
         let ratelimit = match (self.verification.as_ref(), self.ratelimit) {
             (None, None) => RatelimitBuilder::new(300_000, 1, 1), // One per 5 minutes

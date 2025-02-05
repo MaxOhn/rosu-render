@@ -4,7 +4,10 @@ use std::{
     str::from_utf8 as str_from_utf8,
 };
 
-use hyper::{body::Bytes, Body, Error as HyperError, Response};
+use hyper::{
+    body::{Bytes, Incoming},
+    Response,
+};
 use serde::{
     de::{Deserializer, Error as DeError, Unexpected, Visitor},
     Deserialize,
@@ -26,7 +29,7 @@ pub enum ClientError {
     #[error("Failed to chunk the response")]
     ChunkingResponse {
         #[source]
-        source: HyperError,
+        source: hyper::Error,
     },
     #[error("Failed to deserialize response body: {body}")]
     Parsing {
@@ -37,7 +40,7 @@ pub enum ClientError {
     #[error("Parsing or sending the response failed")]
     RequestError {
         #[source]
-        source: HyperError,
+        source: hyper_util::client::legacy::Error,
     },
     #[error("Response error: status code {status_code}, {error}")]
     Response {
@@ -51,7 +54,7 @@ pub enum ClientError {
         source: UrlError,
     },
     #[error("API may be temporarily unavailable (received a 503)")]
-    ServiceUnavailable { response: Response<Body> },
+    ServiceUnavailable { response: Response<Incoming> },
     #[error("Skin was not found (received a 404)")]
     SkinDeleted { error: SkinDeleted },
 }

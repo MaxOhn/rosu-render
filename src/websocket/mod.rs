@@ -1,5 +1,5 @@
 #![cfg(any(
-    feature = "native",
+    feature = "native-tls",
     feature = "rustls-native-roots",
     feature = "rustls-webpki-roots"
 ))]

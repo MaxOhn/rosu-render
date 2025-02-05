@@ -11,19 +11,21 @@ keywords      = ["ordr", "osu"]
 documentation = "https://docs.rs/rosu-render"
 
 [dependencies]
-bytes = { version = "1.4" }
+bytes = { version = "1.10.0" }
+fastrand = { version = "2.3.0", default-features = false, features = ["std"] }
 form_urlencoded = { version = "1.2" }
 futures = { version = "0.3", default-features = false }
-hyper = { version = "0.14", default-features = false, features = ["client", "http1", "http2", "runtime"] }
-hyper-rustls = { version = "0.24", default-features = false, optional = true, features = ["http1", "http2"] }
-hyper-tls = { version = "0.5", default-features = false, optional = true }
+http = { version = "1.2.0", default-features = false }
+http-body-util = { version = "0.1.2", default-features = false }
+hyper = { version = "1.6.0", default-features = false }
+hyper-util = { version = "0.1.10", default-features = false, features = ["client-legacy", "http1", "http2", "tokio"] }
+hyper-rustls = { version = "0.27.5", default-features = false, optional = true, features = ["http1", "http2"] }
+hyper-tls = { version = "0.6.0", default-features = false, optional = true, features = ["alpn"] }
+hyper-hickory = { version = "0.7", default-features = false, optional = true }
 itoa = { version = "1.0" }
 leaky-bucket = { version = "1.0" }
-native-tls = { version = "0.2", default-features = false, optional = true }
 pin-project = { version = "1.1" }
-rand = { version = "0.8", default-features = false, features = ["std_rng", "std"] }
-rustls-native-certs = { version = "0.6", default-features = false, optional = true }
-rustls-tls = { version = "0.21", default-features = false, optional = true, package = "rustls" }
+rustls = { version = "0.23.22", default-features = false, optional = true }
 ryu = { version = "1.0" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
@@ -31,16 +33,20 @@ serde_urlencoded = { version = "0.7" }
 thiserror = { version = "2.0.3" }
 time = { version = "0.3", features = ["formatting", "parsing"] }
 tokio = { version = "1.0", default-features = false, features = ["net"] }
-tokio-tungstenite = { version = "0.20", default-features = false, features = ["connect", "handshake"] }
+tokio-websockets = { version = "0.11.1", default-features = false, features = ["client", "fastrand", "sha1_smol", "simd"] }
 tracing = { version = "0.1", default-features = false, features = ["std", "attributes"] }
 url = { version = "2.0" }
-webpki-roots = { version = "0.25", default-features = false, optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.0", default-features = false, features = ["fs", "macros", "rt-multi-thread", "sync"] }
 
 [features]
-default = ["rustls-webpki-roots"]
-native = ["dep:hyper-tls", "dep:native-tls", "tokio-tungstenite/native-tls"]
-rustls-native-roots = ["dep:hyper-rustls", "dep:rustls-tls", "dep:rustls-native-certs", "hyper-rustls?/native-tokio", "tokio-tungstenite/rustls-tls-native-roots"]
-rustls-webpki-roots = ["dep:hyper-rustls", "dep:rustls-tls", "dep:webpki-roots", "hyper-rustls?/webpki-tokio", "tokio-tungstenite/rustls-tls-webpki-roots"]
+default = ["rustls-webpki-roots", "rustls-ring"]
+hickory = ["dep:hyper-hickory"]
+native-tls = ["dep:hyper-tls", "tokio-websockets/native-tls", "tokio-websockets/openssl"]
+rustls-platform-verifier = ["dep:hyper-rustls", "dep:rustls", "hyper-rustls?/rustls-platform-verifier", "tokio-websockets/rustls-platform-verifier"]
+rustls-native-roots = ["dep:hyper-rustls", "dep:rustls", "hyper-rustls?/native-tokio", "tokio-websockets/rustls-native-roots"]
+rustls-webpki-roots = ["dep:hyper-rustls", "dep:rustls", "hyper-rustls?/webpki-tokio", "tokio-websockets/rustls-webpki-roots"]
+rustls-ring = ["hyper-rustls?/ring", "tokio-websockets/ring"]
+rustls-aws_lc_rs = ["hyper-rustls?/aws-lc-rs", "tokio-websockets/aws_lc_rs"]
+rustls-aws-lc-rs = ["rustls-aws_lc_rs"] # Alias for convenience, underscores are preferred in the rustls stack

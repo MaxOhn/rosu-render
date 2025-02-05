@@ -70,7 +70,13 @@ impl IntoFuture for &mut CommissionRender<'_> {
     type IntoFuture = OrdrFuture<RenderAdded>;
 
     fn into_future(self) -> Self::IntoFuture {
+        let missing_resolution = self.options.is_none();
+
         let mut form = self.options.map_or_else(Form::new, Form::serialize);
+
+        if missing_resolution {
+            form.push_text("resolution", RenderOptions::DEFAULT_RESOLUTION.as_str());
+        }
 
         match self.replay_source {
             ReplaySource::File(bytes) => form.push_replay("replayFile", bytes),

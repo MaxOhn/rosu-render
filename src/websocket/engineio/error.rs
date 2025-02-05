@@ -4,7 +4,7 @@ use bytes::Bytes;
 use hyper::Error as HyperError;
 use serde_json::Error as SerdeError;
 use thiserror::Error as ThisError;
-use tokio_tungstenite::tungstenite::{Error as TungsteniteError, Message};
+use tokio_websockets::Error as WebsocketError;
 
 #[derive(Debug, ThisError)]
 pub enum EngineIoError {
@@ -22,8 +22,6 @@ pub enum EngineIoError {
     HeartbeatTimeout,
     #[error("Incomplete package")]
     IncompletePacket,
-    #[error("Received invalid handshake response: {0:?}")]
-    InvalidHandshake(Message),
     #[error("Failed to decode binary as UTF-8")]
     InvalidUtf8(#[from] Utf8Error),
     #[error("Invalid packet id {0}")]
@@ -31,13 +29,13 @@ pub enum EngineIoError {
     #[error("Failed to load the TLS connector or its certificates")]
     LoadingTls(#[source] Box<dyn StdError + Send + Sync>),
     #[error("Failed to reconnect websocket")]
-    Reconnect(#[source] TungsteniteError),
+    Reconnect(#[source] WebsocketError),
     #[error("Failed to receive response")]
     ReceiveResponse(#[source] HyperError),
     #[error("Failed to upgrade websocket reason=\"{reason}\"")]
     WebsocketUpgrade { reason: &'static str },
     #[error("Failed to receive message from websocket")]
-    WebsocketReceive(#[source] TungsteniteError),
+    WebsocketReceive(#[source] WebsocketError),
     #[error("Failed to send message through websocket")]
-    WebsocketSend(#[source] TungsteniteError),
+    WebsocketSend(#[source] WebsocketError),
 }
