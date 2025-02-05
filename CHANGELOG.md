@@ -1,4 +1,8 @@
-# v0.3.0 (2024-11-27)
+# v0.4.0 (2025-02-05)
+
+Bumped `hyper` & friends to 1.0 and adjusted feature flags ([#4])
+
+## v0.3.0 (2024-11-27)
 
 - (Breaking change) Fixed ban-handling; receiving an "unauthorized" response no longer makes all
   future requests fail; removed enum variant `ClientError::Unauthorized` ([#3])
@@ -25,3 +29,4 @@
 
 [#2]: https://github.com/MaxOhn/rosu-render/pull/2
 [#3]: https://github.com/MaxOhn/rosu-render/pull/3
+[#4]: https://github.com/MaxOhn/rosu-render/pull/4
