@@ -1,4 +1,8 @@
-# v0.4.0 (2025-02-05)
+# v0.4.1 (2025-02-17)
+
+Added more variants to the `ErrorCode` enum and added an `ErrorCode: From<u8>` impl ([#5])
+
+## v0.4.0 (2025-02-05)
 
 Bumped `hyper` & friends to 1.0 and adjusted feature flags ([#4])
 
@@ -30,3 +34,4 @@ Bumped `hyper` & friends to 1.0 and adjusted feature flags ([#4])
 [#2]: https://github.com/MaxOhn/rosu-render/pull/2
 [#3]: https://github.com/MaxOhn/rosu-render/pull/3
 [#4]: https://github.com/MaxOhn/rosu-render/pull/4
+[#5]: https://github.com/MaxOhn/rosu-render/pull/5

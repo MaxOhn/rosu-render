@@ -1,6 +1,6 @@
 [package]
 name          = "rosu-render"
-version       = "0.4.0"
+version       = "0.4.1"
 authors       = ["MaxOhn <ohn.m@hotmail.de>"]
 edition       = "2021"
 description   = "An o!rdr wrapper to render osu! replays"
