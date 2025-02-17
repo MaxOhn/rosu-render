@@ -131,7 +131,7 @@ impl Display for ApiError {
 pub enum ErrorCode {
     #[error("Emergency stop (triggered manually)")]
     EmergencyStop,
-    #[error("Replay parsing error (bad upload from the sender)")]
+    #[error("Replay download error (bad upload from the sender)")]
     ReplayParsingError,
     #[error("Replay download error (bad download from the server), can happen because of invalid characters")]
     ReplayDownloadError,
@@ -198,6 +198,30 @@ pub enum ErrorCode {
     BeatmapsetIsBlacklisted,
     #[error("The replay has already errored less than an hour ago")]
     ReplayErroredRecently,
+    #[error("invalid replay URL or can't download the replay (if replayURL is provided)")]
+    InvalidReplayUrl,
+    #[error("a required field is missing (the missing field is shown in the message)")]
+    MissingField,
+    #[error("your last replays have a too high error rate (cannot be triggered when you're a verified bot)")]
+    ErrorRateTooHigh,
+    #[error("the replay username is inappropriate")]
+    InappropriateUsername,
+    #[error("this skin does not exist")]
+    SkinDoesNotExist,
+    #[error("this custom skin does not exist or has been deleted")]
+    CustomSkinDoesNotExist,
+    #[error("o!rdr is not ready to take render jobs at the moment")]
+    RenderJobsPaused,
+    #[error("o!rdr is not ready to take render jobs from unauthenticated users at the moment (verified bots are not authenticated users)")]
+    UnauthenticatedRenderJobsPaused,
+    #[error("replay accuracy is too bad and you're not authenticated")]
+    AccuracyTooLow,
+    #[error("this score does not exist")]
+    ScoreDoesNotExist,
+    #[error("the replay for this score isn't available")]
+    ReplayUnavailable,
+    #[error("invalid osu! ruleset score ID")]
+    InvalidRulesetId,
     #[error("Unknown error code {0}")]
     Other(u8),
 }
@@ -239,7 +263,62 @@ impl ErrorCode {
             Self::MapperIsBlacklisted => 31,
             Self::BeatmapsetIsBlacklisted => 32,
             Self::ReplayErroredRecently => 33,
+            Self::InvalidReplayUrl => 34,
+            Self::MissingField => 35,
+            Self::ErrorRateTooHigh => 36,
+            Self::InappropriateUsername => 37,
+            Self::SkinDoesNotExist => 38,
+            Self::CustomSkinDoesNotExist => 39,
+            Self::RenderJobsPaused => 40,
+            Self::UnauthenticatedRenderJobsPaused => 41,
+            Self::AccuracyTooLow => 42,
+            Self::ScoreDoesNotExist => 43,
+            Self::ReplayUnavailable => 44,
+            Self::InvalidRulesetId => 45,
             Self::Other(code) => code,
+        }
+    }
+}
+
+impl From<u8> for ErrorCode {
+    fn from(code: u8) -> Self {
+        match code {
+            1 => Self::EmergencyStop,
+            2 => Self::ReplayParsingError,
+            5 => Self::ReplayFileCorrupted,
+            6 => Self::InvalidGameMode,
+            7 => Self::ReplayWithoutInputData,
+            8 => Self::BeatmapNotFound,
+            9 => Self::BeatmapAudioUnavailable,
+            10 => Self::OsuApiConnection,
+            11 => Self::ReplayIsAutoplay,
+            12 => Self::InvalidReplayUsername,
+            13 => Self::BeatmapTooLong,
+            14 => Self::PlayerBannedFromOrdr,
+            16 => Self::IpBannedFromOrdr,
+            17 => Self::UsernameBannedFromOrdr,
+            23 => Self::ServerFailedPreparation,
+            24 => Self::BeatmapHasNoName,
+            25 => Self::ReplayMissingInputData,
+            26 => Self::ReplayIncompatibleMods,
+            29 => Self::ReplayAlreadyInQueue,
+            30 => Self::StarRatingTooHigh,
+            31 => Self::MapperIsBlacklisted,
+            32 => Self::BeatmapsetIsBlacklisted,
+            33 => Self::ReplayErroredRecently,
+            34 => Self::InvalidReplayUrl,
+            35 => Self::MissingField,
+            36 => Self::ErrorRateTooHigh,
+            37 => Self::InappropriateUsername,
+            38 => Self::SkinDoesNotExist,
+            39 => Self::CustomSkinDoesNotExist,
+            40 => Self::RenderJobsPaused,
+            41 => Self::UnauthenticatedRenderJobsPaused,
+            42 => Self::AccuracyTooLow,
+            43 => Self::ScoreDoesNotExist,
+            44 => Self::ReplayUnavailable,
+            45 => Self::InvalidRulesetId,
+            other => Self::Other(other),
         }
     }
 }
@@ -256,33 +335,7 @@ impl<'de> Deserialize<'de> for ErrorCode {
             }
 
             fn visit_u8<E: DeError>(self, v: u8) -> Result<Self::Value, E> {
-                let code = match v {
-                    2 => ErrorCode::ReplayParsingError,
-                    5 => ErrorCode::ReplayFileCorrupted,
-                    6 => ErrorCode::InvalidGameMode,
-                    7 => ErrorCode::ReplayWithoutInputData,
-                    8 => ErrorCode::BeatmapNotFound,
-                    9 => ErrorCode::BeatmapAudioUnavailable,
-                    10 => ErrorCode::OsuApiConnection,
-                    11 => ErrorCode::ReplayIsAutoplay,
-                    12 => ErrorCode::InvalidReplayUsername,
-                    13 => ErrorCode::BeatmapTooLong,
-                    14 => ErrorCode::PlayerBannedFromOrdr,
-                    16 => ErrorCode::IpBannedFromOrdr,
-                    17 => ErrorCode::UsernameBannedFromOrdr,
-                    23 => ErrorCode::ServerFailedPreparation,
-                    24 => ErrorCode::BeatmapHasNoName,
-                    25 => ErrorCode::ReplayMissingInputData,
-                    26 => ErrorCode::ReplayIncompatibleMods,
-                    29 => ErrorCode::ReplayAlreadyInQueue,
-                    30 => ErrorCode::StarRatingTooHigh,
-                    31 => ErrorCode::MapperIsBlacklisted,
-                    32 => ErrorCode::BeatmapsetIsBlacklisted,
-                    33 => ErrorCode::ReplayErroredRecently,
-                    other => ErrorCode::Other(other),
-                };
-
-                Ok(code)
+                Ok(ErrorCode::from(v))
             }
 
             fn visit_u64<E: DeError>(self, v: u64) -> Result<Self::Value, E> {
