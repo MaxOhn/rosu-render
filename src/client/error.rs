@@ -261,6 +261,14 @@ define_error_code! {
         ReplayUnavailable = 44,
         #[error("invalid osu! ruleset score ID")]
         InvalidRulesetId = 45,
+        #[error("the replay username is too long (> 32 characters)")]
+        ReplayUsernameTooLong = 46,
+        #[error("this user doesn't have the permission to use motion blur")]
+        NoMotionBlurPermission = 47,
+        #[error("this user doesn't have the permission to set the resolution to 1080p")]
+        No1080Permission = 48,
+        #[error("this user doesn't have the permission to change the music pitch")]
+        NoPitchPermission = 49,
     }
 }
 
