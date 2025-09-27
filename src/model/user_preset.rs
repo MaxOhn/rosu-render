@@ -12,13 +12,13 @@ use crate::{request::Requestable, util::datetime::deserialize_datetime, ClientEr
 pub struct UserPreset {
     /// Name of the preset
     #[serde(rename = "presetName")]
-    name: String,
+    pub name: String,
     /// Timestamp of last preset save
     #[serde(rename = "lastSavedOn", deserialize_with = "deserialize_datetime")]
-    last_saved_on: OffsetDateTime,
+    pub last_saved_on: OffsetDateTime,
     /// All setting values
     #[serde(flatten)]
-    settings: HashMap<String, Value>,
+    pub settings: HashMap<String, Value>,
 }
 
 impl Requestable for UserPreset {
