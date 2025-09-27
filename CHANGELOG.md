@@ -1,4 +1,10 @@
-# v0.4.1 (2025-02-17)
+# v0.5.0 (2025-09-27)
+
+- Added more variants to the `ErrorCode` enum
+- (Breaking) Added the field `RenderOptions.discord_user_id` to use a user's preset render settings
+- Added the endpoint `OrdrClient.user_preset` to fetch a user's preset render settings
+
+## v0.4.1 (2025-02-17)
 
 Added more variants to the `ErrorCode` enum and added an `ErrorCode: From<u8>` impl ([#5])
 
