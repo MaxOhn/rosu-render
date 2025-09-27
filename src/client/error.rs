@@ -57,6 +57,10 @@ pub enum ClientError {
     ServiceUnavailable { response: Box<Response<Incoming>> },
     #[error("Skin was not found (received a 404)")]
     SkinDeleted { error: SkinDeleted },
+    #[error(
+        "No preset with \"used with bots\" or discord user not linked to ordr (received a 404)"
+    )]
+    PresetNotFound,
 }
 
 impl ClientError {

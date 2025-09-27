@@ -6,6 +6,7 @@ mod server_list;
 mod server_online_count;
 mod skin_custom;
 mod skin_list;
+mod user_preset;
 
 use form_urlencoded::Serializer as FormSerializer;
 use hyper::Method;
@@ -19,7 +20,7 @@ pub(crate) use self::requestable::Requestable;
 pub use self::{
     future::OrdrFuture, render::CommissionRender, render_list::GetRenderList,
     server_list::GetServerList, server_online_count::GetServerOnlineCount,
-    skin_custom::GetSkinCustom, skin_list::GetSkinList,
+    skin_custom::GetSkinCustom, skin_list::GetSkinList, user_preset::GetUserPreset,
 };
 
 pub(crate) struct Request {
