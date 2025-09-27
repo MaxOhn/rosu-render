@@ -176,10 +176,12 @@ impl<T: Requestable> Future for InFlight<T> {
         match status {
             StatusCode::TOO_MANY_REQUESTS => warn!("429 response: {response:?}"),
             StatusCode::SERVICE_UNAVAILABLE => {
-                return Poll::Ready(Err(ClientError::ServiceUnavailable { response }))
+                return Poll::Ready(Err(ClientError::ServiceUnavailable {
+                    response: Box::new(response),
+                }))
             }
             _ => {}
-        };
+        }
 
         Poll::Ready(Ok(Chunking {
             fut: response.into_body().collect(),

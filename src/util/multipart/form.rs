@@ -23,9 +23,9 @@ impl Form {
     pub fn new() -> Self {
         let mut boundary = [0; 16];
 
-        boundary
-            .iter_mut()
-            .for_each(|value| *value = fastrand::alphanumeric() as u8);
+        for value in boundary.iter_mut() {
+            *value = fastrand::alphanumeric() as u8;
+        }
 
         let mut bytes = Vec::with_capacity(1024);
         bytes.extend_from_slice(Self::BOUNDARY_TERMINATOR);

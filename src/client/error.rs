@@ -54,7 +54,7 @@ pub enum ClientError {
         source: UrlError,
     },
     #[error("API may be temporarily unavailable (received a 503)")]
-    ServiceUnavailable { response: Response<Incoming> },
+    ServiceUnavailable { response: Box<Response<Incoming>> },
     #[error("Skin was not found (received a 404)")]
     SkinDeleted { error: SkinDeleted },
 }

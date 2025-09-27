@@ -61,7 +61,7 @@ impl RequestBuilder {
         self
     }
 
-    /// Add a query to the end of the path. Be sure this is only called once!
+    /// Add a query to the end of the path
     pub fn query(mut self, query: impl Serialize) -> Result<Self, ClientError> {
         self.0.path.push('?');
         let len = self.0.path.len();
