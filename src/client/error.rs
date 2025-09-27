@@ -122,204 +122,145 @@ impl Display for ApiError {
     }
 }
 
-/// Error codes as defined by o!rdr
-///
-/// See <https://ordr.issou.best/docs/#section/Error-codes>
-#[derive(Copy, Clone, Debug, ThisError, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-#[repr(u8)]
-pub enum ErrorCode {
-    #[error("Emergency stop (triggered manually)")]
-    EmergencyStop,
-    #[error("Replay download error (bad upload from the sender)")]
-    ReplayParsingError,
-    #[error("Replay download error (bad download from the server), can happen because of invalid characters")]
-    ReplayDownloadError,
-    #[error("All beatmap mirrors are unavailable")]
-    MirrorsUnavailable,
-    #[error("Replay file corrupted")]
-    ReplayFileCorrupted,
-    #[error("Invalid osu! gamemode (not 0 = std)")]
-    InvalidGameMode,
-    #[error("The replay has no input data")]
-    ReplayWithoutInputData,
-    #[error("Beatmap does not exist on osu! (probably because of custom difficulty or non-submitted map)")]
-    BeatmapNotFound,
-    #[error("Audio for the map is unavailable (because of copyright claim)")]
-    BeatmapAudioUnavailable,
-    #[error("Cannot connect to osu! api")]
-    OsuApiConnection,
-    #[error("The replay has the autoplay mod")]
-    ReplayIsAutoplay,
-    #[error("The replay username has invalid characters")]
-    InvalidReplayUsername,
-    #[error("The beatmap is longer than 15 minutes")]
-    BeatmapTooLong,
-    #[error("This player is banned from o!rdr")]
-    PlayerBannedFromOrdr,
-    #[error("Beatmap not found on all the beatmap mirrors")]
-    MapNotFound,
-    #[error("This IP is banned from o!rdr")]
-    IpBannedFromOrdr,
-    #[error("This username is banned from o!rdr")]
-    UsernameBannedFromOrdr,
-    #[error("Unknown error from the renderer")]
-    UnknownRendererError,
-    #[error("The renderer cannot download the map")]
-    CannotDownloadMap,
-    #[error("Beatmap version on the mirror is not the same as the replay")]
-    InconsistentMapVersion,
-    #[error("The replay is corrupted (danser cannot process it)")]
-    ReplayFileCorrupted2,
-    #[error("Server-side problem while finalizing the generated video")]
-    FailedFinalizing,
-    #[error("Server-side problem while preparing the render")]
-    ServerFailedPreparation,
-    #[error("The beatmap has no name")]
-    BeatmapHasNoName,
-    #[error("The replay is missing input data")]
-    ReplayMissingInputData,
-    #[error("The replay has incompatible mods")]
-    ReplayIncompatibleMods,
-    #[error(
-        "Something with the renderer went wrong: it probably has an unstable internet connection \
-        (multiple renders at the same time)"
-    )]
-    RendererIssue,
-    #[error("The renderer cannot download the replay")]
-    CannotDownloadReplay,
-    #[error("The replay is already rendering or in queue")]
-    ReplayAlreadyInQueue,
-    #[error("The star rating is greater than 20")]
-    StarRatingTooHigh,
-    #[error("The mapper is blacklisted")]
-    MapperIsBlacklisted,
-    #[error("The beatmapset is blacklisted")]
-    BeatmapsetIsBlacklisted,
-    #[error("The replay has already errored less than an hour ago")]
-    ReplayErroredRecently,
-    #[error("invalid replay URL or can't download the replay (if replayURL is provided)")]
-    InvalidReplayUrl,
-    #[error("a required field is missing (the missing field is shown in the message)")]
-    MissingField,
-    #[error("your last replays have a too high error rate (cannot be triggered when you're a verified bot)")]
-    ErrorRateTooHigh,
-    #[error("the replay username is inappropriate")]
-    InappropriateUsername,
-    #[error("this skin does not exist")]
-    SkinDoesNotExist,
-    #[error("this custom skin does not exist or has been deleted")]
-    CustomSkinDoesNotExist,
-    #[error("o!rdr is not ready to take render jobs at the moment")]
-    RenderJobsPaused,
-    #[error("o!rdr is not ready to take render jobs from unauthenticated users at the moment (verified bots are not authenticated users)")]
-    UnauthenticatedRenderJobsPaused,
-    #[error("replay accuracy is too bad and you're not authenticated")]
-    AccuracyTooLow,
-    #[error("this score does not exist")]
-    ScoreDoesNotExist,
-    #[error("the replay for this score isn't available")]
-    ReplayUnavailable,
-    #[error("invalid osu! ruleset score ID")]
-    InvalidRulesetId,
-    #[error("Unknown error code {0}")]
-    Other(u8),
+macro_rules! define_error_code {
+    (
+        $( #[ $meta:meta ] )*
+        $vis:vis enum $name:ident {
+            $(
+                #[ $variant_meta:meta ]
+                $variant:ident = $discriminant:literal,
+            )*
+        }
+    ) => {
+        $( #[$meta] )*
+        $vis enum $name {
+            $(
+                #[$variant_meta]
+                $variant,
+            )*
+            #[error("Unknown error code {0}")]
+            Other(u8),
+        }
+
+        impl $name {
+            #[must_use]
+            pub fn to_u8(self) -> u8 {
+                match self {
+                    $( Self::$variant => $discriminant, )*
+                    Self::Other(code) => code,
+                }
+            }
+        }
+
+        impl From<u8> for ErrorCode {
+            fn from(code: u8) -> Self {
+                match code {
+                    $( $discriminant => Self::$variant, )*
+                    other => Self::Other(other),
+                }
+            }
+        }
+    };
 }
 
-impl ErrorCode {
-    #[must_use]
-    pub fn to_u8(self) -> u8 {
-        match self {
-            Self::EmergencyStop => 1,
-            Self::ReplayParsingError => 2,
-            Self::ReplayDownloadError => 3,
-            Self::MirrorsUnavailable => 4,
-            Self::ReplayFileCorrupted => 5,
-            Self::InvalidGameMode => 6,
-            Self::ReplayWithoutInputData => 7,
-            Self::BeatmapNotFound => 8,
-            Self::BeatmapAudioUnavailable => 9,
-            Self::OsuApiConnection => 10,
-            Self::ReplayIsAutoplay => 11,
-            Self::InvalidReplayUsername => 12,
-            Self::BeatmapTooLong => 13,
-            Self::PlayerBannedFromOrdr => 14,
-            Self::MapNotFound => 15,
-            Self::IpBannedFromOrdr => 16,
-            Self::UsernameBannedFromOrdr => 17,
-            Self::UnknownRendererError => 18,
-            Self::CannotDownloadMap => 19,
-            Self::InconsistentMapVersion => 20,
-            Self::ReplayFileCorrupted2 => 21,
-            Self::FailedFinalizing => 22,
-            Self::ServerFailedPreparation => 23,
-            Self::BeatmapHasNoName => 24,
-            Self::ReplayMissingInputData => 25,
-            Self::ReplayIncompatibleMods => 26,
-            Self::RendererIssue => 27,
-            Self::CannotDownloadReplay => 28,
-            Self::ReplayAlreadyInQueue => 29,
-            Self::StarRatingTooHigh => 30,
-            Self::MapperIsBlacklisted => 31,
-            Self::BeatmapsetIsBlacklisted => 32,
-            Self::ReplayErroredRecently => 33,
-            Self::InvalidReplayUrl => 34,
-            Self::MissingField => 35,
-            Self::ErrorRateTooHigh => 36,
-            Self::InappropriateUsername => 37,
-            Self::SkinDoesNotExist => 38,
-            Self::CustomSkinDoesNotExist => 39,
-            Self::RenderJobsPaused => 40,
-            Self::UnauthenticatedRenderJobsPaused => 41,
-            Self::AccuracyTooLow => 42,
-            Self::ScoreDoesNotExist => 43,
-            Self::ReplayUnavailable => 44,
-            Self::InvalidRulesetId => 45,
-            Self::Other(code) => code,
-        }
-    }
-}
-
-impl From<u8> for ErrorCode {
-    fn from(code: u8) -> Self {
-        match code {
-            1 => Self::EmergencyStop,
-            2 => Self::ReplayParsingError,
-            5 => Self::ReplayFileCorrupted,
-            6 => Self::InvalidGameMode,
-            7 => Self::ReplayWithoutInputData,
-            8 => Self::BeatmapNotFound,
-            9 => Self::BeatmapAudioUnavailable,
-            10 => Self::OsuApiConnection,
-            11 => Self::ReplayIsAutoplay,
-            12 => Self::InvalidReplayUsername,
-            13 => Self::BeatmapTooLong,
-            14 => Self::PlayerBannedFromOrdr,
-            16 => Self::IpBannedFromOrdr,
-            17 => Self::UsernameBannedFromOrdr,
-            23 => Self::ServerFailedPreparation,
-            24 => Self::BeatmapHasNoName,
-            25 => Self::ReplayMissingInputData,
-            26 => Self::ReplayIncompatibleMods,
-            29 => Self::ReplayAlreadyInQueue,
-            30 => Self::StarRatingTooHigh,
-            31 => Self::MapperIsBlacklisted,
-            32 => Self::BeatmapsetIsBlacklisted,
-            33 => Self::ReplayErroredRecently,
-            34 => Self::InvalidReplayUrl,
-            35 => Self::MissingField,
-            36 => Self::ErrorRateTooHigh,
-            37 => Self::InappropriateUsername,
-            38 => Self::SkinDoesNotExist,
-            39 => Self::CustomSkinDoesNotExist,
-            40 => Self::RenderJobsPaused,
-            41 => Self::UnauthenticatedRenderJobsPaused,
-            42 => Self::AccuracyTooLow,
-            43 => Self::ScoreDoesNotExist,
-            44 => Self::ReplayUnavailable,
-            45 => Self::InvalidRulesetId,
-            other => Self::Other(other),
-        }
+define_error_code! {
+    /// Error codes as defined by o!rdr
+    ///
+    /// See <https://ordr.issou.best/docs/#section/Error-codes>
+    #[derive(Copy, Clone, Debug, ThisError, PartialEq, Eq, Hash)]
+    #[non_exhaustive]
+    #[repr(u8)]
+    pub enum ErrorCode {
+        #[error("Emergency stop (triggered manually)")]
+        EmergencyStop = 1,
+        #[error("Replay download error (bad upload from the sender)")]
+        ReplayParsingError = 2,
+        #[error("Replay download error (bad download from the server), can happen because of invalid characters")]
+        ReplayDownloadError = 3,
+        #[error("All beatmap mirrors are unavailable")]
+        MirrorsUnavailable = 4,
+        #[error("Replay file corrupted")]
+        ReplayFileCorrupted = 5,
+        #[error("Invalid osu! gamemode (not 0 = std)")]
+        InvalidGameMode = 6,
+        #[error("The replay has no input data")]
+        ReplayWithoutInputData = 7,
+        #[error("Beatmap does not exist on osu! (probably because of custom difficulty or non-submitted map)")]
+        BeatmapNotFound = 8,
+        #[error("Audio for the map is unavailable (because of copyright claim)")]
+        BeatmapAudioUnavailable = 9,
+        #[error("Cannot connect to osu! api")]
+        OsuApiConnection = 10,
+        #[error("The replay has the autoplay mod")]
+        ReplayIsAutoplay = 11,
+        #[error("The replay username has invalid characters")]
+        InvalidReplayUsername = 12,
+        #[error("The beatmap is longer than 15 minutes")]
+        BeatmapTooLong = 13,
+        #[error("This player is banned from o!rdr")]
+        PlayerBannedFromOrdr = 14,
+        #[error("Beatmap not found on all the beatmap mirrors")]
+        MapNotFound = 15,
+        #[error("This IP is banned from o!rdr")]
+        IpBannedFromOrdr = 16,
+        #[error("This username is banned from o!rdr")]
+        UsernameBannedFromOrdr = 17,
+        #[error("Unknown error from the renderer")]
+        UnknownRendererError = 18,
+        #[error("The renderer cannot download the map")]
+        CannotDownloadMap = 19,
+        #[error("Beatmap version on the mirror is not the same as the replay")]
+        InconsistentMapVersion = 20,
+        #[error("The replay is corrupted (danser cannot process it)")]
+        ReplayFileCorrupted2 = 21,
+        #[error("Server-side problem while finalizing the generated video")]
+        FailedFinalizing = 22,
+        #[error("Server-side problem while preparing the render")]
+        ServerFailedPreparation = 23,
+        #[error("The beatmap has no name")]
+        BeatmapHasNoName = 24,
+        #[error("The replay is missing input data")]
+        ReplayMissingInputData = 25,
+        #[error("The replay has incompatible mods")]
+        ReplayIncompatibleMods = 26,
+        #[error("Something with the renderer went wrong: it probably has an unstable internet connection (multiple renders at the same time)")]
+        RendererIssue = 27,
+        #[error("The renderer cannot download the replay")]
+        CannotDownloadReplay = 28,
+        #[error("The replay is already rendering or in queue")]
+        ReplayAlreadyInQueue = 29,
+        #[error("The star rating is greater than 20")]
+        StarRatingTooHigh = 30,
+        #[error("The mapper is blacklisted")]
+        MapperIsBlacklisted = 31,
+        #[error("The beatmapset is blacklisted")]
+        BeatmapsetIsBlacklisted = 32,
+        #[error("The replay has already errored less than an hour ago")]
+        ReplayErroredRecently = 33,
+        #[error("invalid replay URL or can't download the replay (if replayURL is provided)")]
+        InvalidReplayUrl = 34,
+        #[error("a required field is missing (the missing field is shown in the message)")]
+        MissingField = 35,
+        #[error("your last replays have a too high error rate (cannot be triggered when you're a verified bot)")]
+        ErrorRateTooHigh = 36,
+        #[error("the replay username is inappropriate")]
+        InappropriateUsername = 37,
+        #[error("this skin does not exist")]
+        SkinDoesNotExist = 38,
+        #[error("this custom skin does not exist or has been deleted")]
+        CustomSkinDoesNotExist = 39,
+        #[error("o!rdr is not ready to take render jobs at the moment")]
+        RenderJobsPaused = 40,
+        #[error("o!rdr is not ready to take render jobs from unauthenticated users at the moment (verified bots are not authenticated users)")]
+        UnauthenticatedRenderJobsPaused = 41,
+        #[error("replay accuracy is too bad and you're not authenticated")]
+        AccuracyTooLow = 42,
+        #[error("this score does not exist")]
+        ScoreDoesNotExist = 43,
+        #[error("the replay for this score isn't available")]
+        ReplayUnavailable = 44,
+        #[error("invalid osu! ruleset score ID")]
+        InvalidRulesetId = 45,
     }
 }
 
