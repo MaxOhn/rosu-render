@@ -1,4 +1,8 @@
-# v0.5.0 (2025-09-27)
+# v0.5.1 (2025-09-27)
+
+- Fields of `UserPreset` are now public
+
+## v0.5.0 (2025-09-27)
 
 - Added more variants to the `ErrorCode` enum
 - (Breaking) Added the field `RenderOptions.discord_user_id` to use a user's preset render settings
