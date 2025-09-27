@@ -23,7 +23,7 @@ use crate::{
     model::{RenderSkinOption, Verification},
     request::{
         CommissionRender, GetRenderList, GetServerList, GetServerOnlineCount, GetSkinCustom,
-        GetSkinList, OrdrFuture, Request,
+        GetSkinList, GetUserPreset, OrdrFuture, Request,
     },
     util::multipart::Form,
 };
@@ -102,6 +102,14 @@ impl OrdrClient {
     /// Get a paginated list of all available skins.
     pub const fn skin_list(&self) -> GetSkinList<'_> {
         GetSkinList::new(self)
+    }
+
+    /// Get preset render settings of a discord user.
+    ///
+    /// `key` is a verified bot key and `discord_id` belongs to the user whose
+    /// preset should be fetched.
+    pub const fn user_preset<'a>(&'a self, key: &'a str, discord_id: u64) -> GetUserPreset<'a> {
+        GetUserPreset::new(self, key, discord_id)
     }
 
     pub(crate) fn verification(&self) -> Option<&Verification> {

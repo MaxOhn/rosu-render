@@ -12,6 +12,7 @@ pub(crate) enum Route {
     ServerOnlineCount,
     SkinList,
     SkinCustom,
+    UserPreset,
 }
 
 impl Route {
@@ -22,7 +23,8 @@ impl Route {
             | Self::ServerList
             | Self::ServerOnlineCount
             | Self::SkinList
-            | Self::SkinCustom => Method::GET,
+            | Self::SkinCustom
+            | Self::UserPreset => Method::GET,
         }
     }
 
@@ -33,7 +35,8 @@ impl Route {
             | Route::ServerList
             | Route::ServerOnlineCount
             | Route::SkinList
-            | Route::SkinCustom => RatelimiterKind::General,
+            | Route::SkinCustom
+            | Route::UserPreset => RatelimiterKind::General,
         }
     }
 }
@@ -46,6 +49,7 @@ impl Display for Route {
             Self::ServerOnlineCount => f.write_str("servers/onlinecount"),
             Self::SkinList => f.write_str("skins"),
             Self::SkinCustom => f.write_str("skins/custom"),
+            Self::UserPreset => f.write_str("presets/bot"),
         }
     }
 }

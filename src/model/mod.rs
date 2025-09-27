@@ -2,6 +2,7 @@ mod event;
 mod render;
 mod skin_custom;
 mod skin_list;
+mod user_preset;
 mod verification;
 
 pub use self::{
@@ -14,5 +15,6 @@ pub use self::{
     },
     skin_custom::{SkinDeleted, SkinInfo},
     skin_list::{Skin, SkinList},
+    user_preset::UserPreset,
     verification::Verification,
 };
