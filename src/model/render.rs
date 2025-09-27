@@ -267,6 +267,37 @@ pub struct RenderOptions {
     /// Ignores fail in the replay or not.
     #[serde(rename = "ignoreFail")]
     pub ignore_fail: bool,
+    /// For verified bots, supplying the requester's Discord ID allows the o!rdr
+    /// server to set their favorite preset if they have one saved and set to be
+    /// used with bots in their issou.best account.
+    #[serde(
+        rename = "discordUserId",
+        skip_serializing_if = "Option::is_none",
+        with = "maybe_u64_as_str"
+    )]
+    pub discord_user_id: Option<u64>,
+}
+
+mod maybe_u64_as_str {
+    use serde::{
+        de::{Deserialize, Deserializer, Error},
+        Serializer,
+    };
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<u64>, D::Error> {
+        match Option::<&str>::deserialize(d)? {
+            Some(s) => s.parse().map(Some).map_err(Error::custom),
+            None => Ok(None),
+        }
+    }
+
+    #[expect(clippy::ref_option, reason = "required by serde")]
+    pub fn serialize<S: Serializer>(opt: &Option<u64>, s: S) -> Result<S::Ok, S::Error> {
+        // we skip serialization if the option is `None`
+        let Some(n) = opt else { unreachable!() };
+
+        s.serialize_str(&n.to_string())
+    }
 }
 
 impl RenderOptions {
@@ -326,6 +357,7 @@ impl Default for RenderOptions {
             show_strain_graph: false,
             show_slider_breaks: false,
             ignore_fail: false,
+            discord_user_id: None,
         }
     }
 }

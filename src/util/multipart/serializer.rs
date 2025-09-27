@@ -119,9 +119,7 @@ impl Serializer for &mut FormSerializer {
     }
 
     fn serialize_str(self, s: &str) -> Result<Self::Ok, Self::Error> {
-        self.form.bytes.extend_from_slice(s.as_bytes());
-
-        Ok(())
+        self.serialize_bytes(s.as_bytes())
     }
 
     fn serialize_bytes(self, bytes: &[u8]) -> Result<Self::Ok, Self::Error> {
