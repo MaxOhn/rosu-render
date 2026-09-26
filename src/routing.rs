@@ -6,6 +6,7 @@ use crate::client::RatelimiterKind;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum Route {
+    DynLink,
     Render,
     RenderList,
     ServerList,
@@ -19,7 +20,8 @@ impl Route {
     pub fn method(self) -> Method {
         match self {
             Self::Render => Method::POST,
-            Self::RenderList
+            Self::DynLink
+            | Self::RenderList
             | Self::ServerList
             | Self::ServerOnlineCount
             | Self::SkinList
@@ -31,7 +33,8 @@ impl Route {
     pub fn ratelimiter(self) -> RatelimiterKind {
         match self {
             Route::Render => RatelimiterKind::SendRender,
-            Route::RenderList
+            Route::DynLink
+            | Route::RenderList
             | Route::ServerList
             | Route::ServerOnlineCount
             | Route::SkinList
@@ -44,6 +47,9 @@ impl Route {
 impl Display for Route {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
+            // `dynlink` lives outside the `/ordr/` base path, so it is absolute
+            // to the API host.
+            Self::DynLink => f.write_str("/dynlink/ordr/gen"),
             Self::Render | Self::RenderList => f.write_str("renders"),
             Self::ServerList => f.write_str("servers"),
             Self::ServerOnlineCount => f.write_str("servers/onlinecount"),
@@ -61,6 +67,7 @@ mod tests {
     #[test]
     fn endpoints() {
         for (route, path) in [
+            (Route::DynLink, "/dynlink/ordr/gen"),
             (Route::Render, "renders"),
             (Route::RenderList, "renders"),
             (Route::ServerList, "servers"),

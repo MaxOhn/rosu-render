@@ -1,3 +1,4 @@
+mod dynlink;
 mod future;
 mod render;
 mod render_list;
@@ -18,7 +19,7 @@ use crate::{client::RatelimiterKind, routing::Route, util::multipart::Form, Clie
 pub(crate) use self::requestable::Requestable;
 
 pub use self::{
-    future::OrdrFuture, render::CommissionRender, render_list::GetRenderList,
+    dynlink::GetDynLink, future::OrdrFuture, render::CommissionRender, render_list::GetRenderList,
     server_list::GetServerList, server_online_count::GetServerOnlineCount,
     skin_custom::GetSkinCustom, skin_list::GetSkinList, user_preset::GetUserPreset,
 };

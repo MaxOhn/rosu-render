@@ -3,7 +3,7 @@ use std::time::Duration;
 use rosu_render::{
     model::{RenderOptions, RenderSkinOption, Verification},
     websocket::event::RawEvent,
-    OrdrClient, OrdrWebsocket,
+    ClientError, OrdrClient, OrdrWebsocket,
 };
 
 #[tokio::test]
@@ -48,6 +48,42 @@ async fn render_success() {
     timeout_res.unwrap_or_else(|_| panic!("Timed out while awaiting commissioned render"));
 
     websocket.disconnect().await.unwrap();
+}
+
+/// A nonexistent render ID must come back as a server error, which proves the
+/// request path actually reached the API instead of failing in transport.
+#[tokio::test]
+async fn dyn_link_invalid_id() {
+    let client = OrdrClient::builder().build();
+
+    let err = client.dyn_link(1).await.unwrap_err();
+    assert!(
+        matches!(
+            err,
+            ClientError::Response { .. } | ClientError::Parsing { .. }
+        ),
+        "expected an API-level error, got: {err:#?}"
+    );
+}
+
+#[tokio::test]
+async fn dyn_link() {
+    let key = match std::env::var("ORDR_KEY") {
+        Ok(key) => key,
+        Err(_) => {
+            eprintln!("skipping dyn_link: ORDR_KEY is not set");
+            return;
+        }
+    };
+    let client = OrdrClient::builder()
+        .verification(Verification::Key(key.into_boxed_str()))
+        .build();
+
+    let list = client.render_list().await.unwrap();
+    let render_id = list.renders[0].id;
+
+    let link = client.dyn_link(render_id).await.unwrap();
+    assert!(link.url.starts_with("http"));
 }
 
 #[tokio::test]

@@ -22,12 +22,13 @@ use self::{connector::Connector, error::ClientError, ratelimiter::Ratelimiter};
 use crate::{
     model::{RenderSkinOption, Verification},
     request::{
-        CommissionRender, GetRenderList, GetServerList, GetServerOnlineCount, GetSkinCustom,
-        GetSkinList, GetUserPreset, OrdrFuture, Request,
+        CommissionRender, GetDynLink, GetRenderList, GetServerList, GetServerOnlineCount,
+        GetSkinCustom, GetSkinList, GetUserPreset, OrdrFuture, Request,
     },
     util::multipart::Form,
 };
 
+const API_HOST: &str = "https://apis.issou.best";
 const BASE_URL: &str = "https://apis.issou.best/ordr/";
 const ROSU_RENDER_USER_AGENT: &str = concat!("rosu-render (", env!("CARGO_PKG_VERSION"), ")");
 
@@ -62,6 +63,11 @@ impl OrdrClient {
     /// You must provide the ID of the custom skin.
     pub const fn custom_skin_info(&self, id: u32) -> GetSkinCustom<'_> {
         GetSkinCustom::new(self, id)
+    }
+
+    /// Generate a temporary video download link for a render.
+    pub const fn dyn_link(&self, render_id: u32) -> GetDynLink<'_> {
+        GetDynLink::new(self, render_id)
     }
 
     /// Send a render request to o!rdr via replay file.
@@ -142,8 +148,15 @@ impl OrdrClient {
         method: Method,
         path: &str,
     ) -> Result<ResponseFuture, ClientError> {
-        let mut url = String::with_capacity(BASE_URL.len() + path.len());
-        url.push_str(BASE_URL);
+        // Routes starting with `/` are absolute to the API host; all others are
+        // relative to the `/ordr/` base path.
+        let base = if path.starts_with('/') {
+            API_HOST
+        } else {
+            BASE_URL
+        };
+        let mut url = String::with_capacity(base.len() + path.len());
+        url.push_str(base);
         url.push_str(path);
         debug!(?url);
 

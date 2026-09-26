@@ -1,3 +1,4 @@
+mod dynlink;
 mod event;
 mod render;
 mod skin_custom;
@@ -6,6 +7,7 @@ mod user_preset;
 mod verification;
 
 pub use self::{
+    dynlink::DynLink,
     event::{
         CustomSkinProcessUpdate, Event, RenderAdded, RenderDone, RenderFailed, RenderProgress,
     },
