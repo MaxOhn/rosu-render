@@ -1,4 +1,12 @@
-# v0.5.1 (2025-09-27)
+# v0.5.2 (2026-09-26)
+
+- Fixed `Render` deserialization failing when the server omits `discordUserId` from a render
+- Added the endpoint `OrdrClient::dyn_link` to generate a dynlink URL for a render
+- Added `OrdrWebsocket::authenticate` so verified bots also receive events about their private and unlisted renders
+- Added more variants to the `ErrorCode` enum
+- Fixed the websocket reconnect backoff not being reset after a successful reconnect
+
+## v0.5.1 (2025-09-27)
 
 - Fields of `UserPreset` are now public
 
