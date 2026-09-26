@@ -4,7 +4,7 @@ Rust wrapper for the [API and websocket](https://ordr.issou.best/docs/) of [`o!r
 
 ## Usage
 
-[`examples/full.rs`](examples/full.rs) is a complete example: it commissions a render and follows it until it is done, with a supervisor task that keeps the websocket connected and forwards the events of the render.
+[`examples/full.rs`](https://github.com/MaxOhn/rosu-render/blob/main/examples/full.rs) is a complete example: it commissions a render and follows it until it is done, with a supervisor task that keeps the websocket connected and forwards the events of the render.
 
 The short version:
 
@@ -31,7 +31,7 @@ async fn main() {
 }
 ```
 
-Listen for the render's events through the websocket, for example as done in [`examples/full.rs`](examples/full.rs).
+Listen for the render's events through the websocket, for example as done in [`examples/full.rs`](https://github.com/MaxOhn/rosu-render/blob/main/examples/full.rs).
 
 ## Features
 
