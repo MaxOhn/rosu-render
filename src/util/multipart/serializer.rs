@@ -250,11 +250,11 @@ impl SerializeStruct for &mut FormSerializer {
 /// `serde::ser::Error`, which cannot be implemented for `std::convert::Infallible`
 /// (orphan rule).
 #[derive(Debug)]
-pub(crate) struct Infallible;
+pub(crate) enum Infallible {}
 
 impl SerError for Infallible {
     fn custom<T: Display>(_: T) -> Self {
-        Self
+        unreachable!("Infallible is uninhabited")
     }
 }
 
