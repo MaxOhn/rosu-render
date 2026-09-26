@@ -37,6 +37,11 @@ impl Reconnect {
             None => NonZeroU64::new(100),
         };
     }
+
+    /// Reset the backoff state, e.g. after a successful connection.
+    pub(super) fn reset(&mut self) {
+        self.backoff_ms = None;
+    }
 }
 
 impl Default for Reconnect {
@@ -86,7 +91,9 @@ mod tests {
         reconnect.backoff();
         assert_eq!(reconnect.delay(), Some(Duration::from_millis(10000)));
 
-        reconnect.last_attempt = Instant::now() - Reconnect::RESET_INTERVAL;
+        reconnect.last_attempt = Instant::now()
+            .checked_sub(Reconnect::RESET_INTERVAL)
+            .unwrap();
         assert_eq!(reconnect.delay(), None);
 
         reconnect.backoff();

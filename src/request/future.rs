@@ -1,7 +1,7 @@
 use std::{
     future::Future,
     marker::PhantomData,
-    pin::{pin, Pin},
+    pin::Pin,
     task::{Context, Poll},
 };
 

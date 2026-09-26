@@ -195,3 +195,91 @@ impl RawCustomSkinProcessUpdate {
         serde_json::from_slice(&self.bytes)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::client::error::ErrorCode;
+
+    #[test]
+    fn parse_progress_event() {
+        let frame = br#"["render_progress_json",{"description":"","progress":"45%","renderID":123,"renderer":"r","username":"u"}]"#;
+
+        let progress = match RawEvent::from_bytes(Bytes::from_static(frame)).unwrap() {
+            RawEvent::RenderProgress(progress) => progress,
+            event => panic!("unexpected event: {event:?}"),
+        };
+
+        assert_eq!(progress.render_id, 123);
+        assert_eq!(progress.deserialize().unwrap().progress.as_ref(), "45%");
+    }
+
+    #[test]
+    fn parse_done_event() {
+        let frame = br#"["render_done_json",{"renderID":1,"videoUrl":"https://ordr.issou.best/video.mp4"}]"#;
+
+        let done = match RawEvent::from_bytes(Bytes::from_static(frame)).unwrap() {
+            RawEvent::RenderDone(done) => done,
+            event => panic!("unexpected event: {event:?}"),
+        };
+
+        assert_eq!(done.render_id, 1);
+        assert_eq!(
+            done.deserialize().unwrap().video_url.as_ref(),
+            "https://ordr.issou.best/video.mp4"
+        );
+    }
+
+    #[test]
+    fn parse_failed_event() {
+        let frame =
+            br#"["render_failed_json",{"renderID":2,"errorCode":2,"errorMessage":"bad replay"}]"#;
+
+        let failed = match RawEvent::from_bytes(Bytes::from_static(frame)).unwrap() {
+            RawEvent::RenderFailed(failed) => failed,
+            event => panic!("unexpected event: {event:?}"),
+        };
+
+        let failed = failed.deserialize().unwrap();
+
+        assert_eq!(failed.render_id, 2);
+        assert_eq!(failed.error_code, Some(ErrorCode::ReplayParsingError));
+        assert_eq!(failed.error_message.as_ref(), "bad replay");
+    }
+
+    #[test]
+    fn parse_added_event() {
+        let frame = br#"["render_added_json",{"renderID":9}]"#;
+
+        let added = match RawEvent::from_bytes(Bytes::from_static(frame)).unwrap() {
+            RawEvent::RenderAdded(added) => added,
+            event => panic!("unexpected event: {event:?}"),
+        };
+
+        assert_eq!(added.deserialize().unwrap().render_id, 9);
+    }
+
+    #[test]
+    fn parse_custom_skin_event() {
+        let frame = br#"["custom_skin_process_update",{"skinId":7}]"#;
+
+        assert!(matches!(
+            RawEvent::from_bytes(Bytes::from_static(frame)).unwrap(),
+            RawEvent::CustomSkinProcessUpdate(_),
+        ));
+    }
+
+    #[test]
+    fn reject_unknown_event() {
+        let frame = br#"["nope_json",{"a":1}]"#;
+
+        assert!(RawEvent::from_bytes(Bytes::from_static(frame)).is_err());
+    }
+
+    #[test]
+    fn reject_event_without_render_id() {
+        let frame = br#"["render_progress_json",{"description":""}]"#;
+
+        assert!(RawEvent::from_bytes(Bytes::from_static(frame)).is_err());
+    }
+}

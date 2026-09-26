@@ -11,6 +11,10 @@ impl Form {
     pub(super) const BOUNDARY_TERMINATOR: &'static [u8; 2] = b"--";
     pub(super) const NEWLINE: &'static [u8; 2] = b"\r\n";
 
+    /// Serialize a struct's fields into a [`Form`].
+    ///
+    /// Only plain struct field values are supported: `Option`, `char`,
+    /// sequences, and maps panic during serialization.
     pub fn serialize<T: Serialize>(value: &T) -> Self {
         let mut serializer = FormSerializer::new();
 

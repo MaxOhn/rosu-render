@@ -244,6 +244,11 @@ impl SerializeStruct for &mut FormSerializer {
     }
 }
 
+/// Equivalent of `std::convert::Infallible`.
+///
+/// This needs to be a local type: serde's `Serializer::Error` must implement
+/// `serde::ser::Error`, which cannot be implemented for `std::convert::Infallible`
+/// (orphan rule).
 #[derive(Debug)]
 pub(crate) struct Infallible;
 
@@ -273,9 +278,9 @@ mod tests {
 
     #[test]
     fn test_form_serializer() {
-        let _form = Form::serialize(&RenderOptions::default());
+        let form = Form::serialize(&RenderOptions::default());
 
-        let bytes = String::from_utf8(_form.build()).unwrap();
+        let bytes = String::from_utf8(form.build()).unwrap();
         println!("{bytes}");
     }
 }

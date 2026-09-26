@@ -5,7 +5,7 @@ use itoa::Buffer;
 
 use super::error::WebsocketError;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub(super) enum PacketKind {
     Connect = 0,
@@ -92,15 +92,8 @@ impl Packet {
         packet.kind = PacketKind::try_from(id_char)?;
         payload = &payload[id_char.len_utf8()..];
 
-        if payload.starts_with('/') {
-            let (_, rest) = payload
-                .split_once(',')
-                .ok_or(WebsocketError::InvalidPacket)?;
-
-            payload = rest;
-        }
-
-        let Some((non_digit_idx, _)) = payload.char_indices().find(|(_, c)| !c.is_ascii_digit()) else {
+        let Some((non_digit_idx, _)) = payload.char_indices().find(|(_, c)| !c.is_ascii_digit())
+        else {
             return Ok(packet);
         };
 
@@ -113,5 +106,44 @@ impl Packet {
         packet.data = Some(bytes.slice_ref(payload.as_bytes()));
 
         Ok(packet)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use bytes::Bytes;
+
+    use super::{Packet, PacketKind};
+
+    #[test]
+    fn parse_event_packet() {
+        let frame = br#"2["render_done_json",{"renderID":1}]"#.as_ref();
+
+        let packet = Packet::from_bytes(&Bytes::from_static(frame)).unwrap();
+
+        assert_eq!(packet.kind, PacketKind::Event);
+        assert_eq!(packet.id, None);
+        assert_eq!(packet.data.unwrap().as_ref(), &frame[1..]);
+    }
+
+    #[test]
+    fn parse_ack_packet_with_id() {
+        let packet = Packet::from_bytes(&Bytes::from_static(b"37[]")).unwrap();
+
+        assert_eq!(packet.kind, PacketKind::Ack);
+        assert_eq!(packet.id, Some(7));
+    }
+
+    #[test]
+    fn parse_connect_packet() {
+        let packet = Packet::from_bytes(&Bytes::from_static(b"0")).unwrap();
+
+        assert_eq!(packet.kind, PacketKind::Connect);
+        assert_eq!(packet.data, None);
+    }
+
+    #[test]
+    fn reject_invalid_packet() {
+        assert!(Packet::from_bytes(&Bytes::from_static(b"x")).is_err());
     }
 }

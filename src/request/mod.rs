@@ -64,10 +64,15 @@ impl RequestBuilder {
 
     /// Add a query to the end of the path
     pub fn query(mut self, query: impl Serialize) -> Result<Self, ClientError> {
-        self.0.path.push('?');
-        let len = self.0.path.len();
+        fn form_serializer(path: &mut String) -> FormSerializer<'_, &mut String> {
+            if !path.contains('?') {
+                path.push('?');
+            }
 
-        let mut form_serializer = FormSerializer::for_suffix(&mut self.0.path, len);
+            FormSerializer::for_suffix(path, path.len())
+        }
+
+        let mut form_serializer = form_serializer(&mut self.0.path);
         let url_serializer = UrlSerializer::new(&mut form_serializer);
         query.serialize(url_serializer).map_err(ClientError::from)?;
 

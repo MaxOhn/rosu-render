@@ -49,6 +49,10 @@ impl OrdrWebsocket {
     }
 
     /// Await the next o!rdr websocket event.
+    ///
+    /// This can block indefinitely when the connection is alive but no events
+    /// arrive, so apply an idle timeout around it if that should count as a
+    /// dead connection.
     pub async fn next_event(&mut self) -> Result<RawEvent, WebsocketError> {
         loop {
             let Some(bytes) = self.engineio.next_message().await? else {
@@ -92,7 +96,11 @@ impl OrdrWebsocket {
 
         let err = match self.engineio.reconnect().await {
             Ok(()) => match self.open().await {
-                Ok(()) => return Ok(()),
+                Ok(()) => {
+                    self.reconnect.reset();
+
+                    return Ok(());
+                }
                 Err(err) => err,
             },
             Err(err) => WebsocketError::EngineIo(err),
