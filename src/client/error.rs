@@ -273,6 +273,16 @@ define_error_code! {
         No1080Permission = 48,
         #[error("this user doesn't have the permission to change the music pitch")]
         NoPitchPermission = 49,
+        #[error("this replay has incompatible mods selected: either the renderer doesn't support it or the replay was tampered with")]
+        IncompatibleMods = 50,
+        #[error("the beatmap difficulty is blacklisted")]
+        DifficultyIsBlacklisted = 51,
+        #[error("this user doesn't have the permission to send score IDs to render")]
+        NoScoreIdPermission = 52,
+        #[error("the beatmap is too short")]
+        BeatmapTooShort = 53,
+        #[error("the Discord user is being rate-limited (only for verified bots supplying Discord user IDs)")]
+        DiscordUserRateLimited = 54,
     }
 }
 
@@ -319,7 +329,24 @@ mod tests {
             error.to_string(),
             "Error code Emergency stop (triggered manually): Render failed (reason: bad replay)",
         );
+    }
 
+    #[test]
+    fn recent_error_codes_deserialize() {
+        for (raw, name) in [
+            (50, "IncompatibleMods"),
+            (51, "DifficultyIsBlacklisted"),
+            (52, "NoScoreIdPermission"),
+            (53, "BeatmapTooShort"),
+            (54, "DiscordUserRateLimited"),
+        ] {
+            let code: ErrorCode = serde_json::from_value(serde_json::json!(raw)).unwrap();
+            assert_eq!(format!("{code:?}"), name);
+        }
+    }
+
+    #[test]
+    fn api_error_bare_message() {
         let bare: ApiError = serde_json::from_str(r#"{"message": "gone"}"#).unwrap();
 
         assert_eq!(bare.to_string(), "gone");
