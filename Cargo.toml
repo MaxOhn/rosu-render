@@ -14,7 +14,7 @@ documentation = "https://docs.rs/rosu-render"
 bytes = { version = "1.10.0" }
 fastrand = { version = "2.3.0", default-features = false, features = ["std"] }
 form_urlencoded = { version = "1.2" }
-futures = { version = "0.3", default-features = false }
+futures-util = { version = "0.3", default-features = false, features = ["sink"] }
 http = { version = "1.2.0", default-features = false }
 http-body-util = { version = "0.1.2", default-features = false }
 hyper = { version = "1.6.0", default-features = false }

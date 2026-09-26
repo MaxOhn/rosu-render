@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use bytes::Bytes;
-use futures::{SinkExt, StreamExt};
+use futures_util::{SinkExt, StreamExt};
 use tokio::{net::TcpStream, time::Instant};
 use tokio_websockets::{ClientBuilder, Connector, Limits, MaybeTlsStream, Message};
 use url::Url;
