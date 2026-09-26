@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::{model::RenderList, routing::Route, ClientError, OrdrClient};
 
-use super::{OrdrFuture, Request};
+use super::{OrdrFuture, Request, RequestBuilder};
 
 #[derive(Serialize)]
 struct GetRenderListFields<'a> {
@@ -108,6 +108,12 @@ impl<'a> GetRenderList<'a> {
 
         self
     }
+
+    fn request(&self) -> Result<Request, ClientError> {
+        Request::builder(Route::RenderList)
+            .query(&self.fields)
+            .map(RequestBuilder::build)
+    }
 }
 
 impl IntoFuture for &mut GetRenderList<'_> {
@@ -115,8 +121,8 @@ impl IntoFuture for &mut GetRenderList<'_> {
     type IntoFuture = OrdrFuture<RenderList>;
 
     fn into_future(self) -> Self::IntoFuture {
-        match Request::builder(Route::RenderList).query(&self.fields) {
-            Ok(builder) => self.ordr.request(builder.build()),
+        match self.request() {
+            Ok(request) => self.ordr.request(request),
             Err(err) => OrdrFuture::error(err),
         }
     }
@@ -128,5 +134,44 @@ impl IntoFuture for GetRenderList<'_> {
 
     fn into_future(mut self) -> Self::IntoFuture {
         (&mut self).into_future()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use hyper::Method;
+
+    use crate::OrdrClient;
+
+    use super::GetRenderList;
+
+    fn path(list: &GetRenderList<'_>) -> String {
+        let request = list
+            .request()
+            .unwrap_or_else(|err| panic!("query serialization failed: {err}"));
+
+        assert_eq!(request.method, Method::GET);
+
+        request.path
+    }
+
+    #[test]
+    fn paging_and_render_id() {
+        let client = OrdrClient::builder().build();
+
+        let mut list = client.render_list();
+        list.page_size(25).page(2).render_id(42);
+
+        assert_eq!(path(&list), "renders?pageSize=25&page=2&renderID=42");
+    }
+
+    #[test]
+    fn filters() {
+        let client = OrdrClient::builder().build();
+
+        let mut list = client.render_list();
+        list.no_bots(true).link("pov8n").mapset_id(7);
+
+        assert_eq!(path(&list), "renders?nobots=true&link=pov8n&beatmapsetid=7");
     }
 }

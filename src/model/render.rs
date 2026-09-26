@@ -512,3 +512,95 @@ impl Requestable for ServerOnlineCount {
         ClientError::response_error(bytes, status.as_u16())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `Render` fields are deserialized as borrowed strings, so the sample
+    /// goes through `serde_json::from_str` rather than `from_value`.
+    fn sample_render_json() -> String {
+        let json = sample_render_value();
+
+        serde_json::to_string(&json).unwrap()
+    }
+
+    fn sample_render_value() -> serde_json::Value {
+        let mut json = serde_json::json!({
+            "renderID": 42,
+            "date": 1_700_000_000_123_i64,
+            "username": "username",
+            "progress": "100",
+            "renderer": "renderer",
+            "description": "description",
+            "title": "title",
+            "isBot": false,
+            "isVerified": false,
+            "videoUrl": "https://example.com/video.mp4",
+            "mapLink": "maplink",
+            "mapTitle": "maptitle",
+            "replayDifficulty": "4.5",
+            "replayUsername": "player",
+            "mapID": 1,
+            "needToRedownload": false,
+            "motionBlur960fps": false,
+            "renderStartTime": 1_700_000_000_123_i64,
+            "renderEndTime": 1_700_000_060_123_i64,
+            "uploadEndTime": 1_700_000_070_123_i64,
+            "renderTotalTime": 60,
+            "uploadTotalTime": 10,
+            "mapLength": 180,
+            "replayMods": "HDHR",
+            "removed": false,
+            "discordUserId": serde_json::Value::Null,
+            "skin": "Kuro",
+            "customSkin": false,
+        });
+
+        let options = serde_json::to_value(RenderOptions::default()).unwrap();
+
+        json.as_object_mut().unwrap().extend(
+            options
+                .as_object()
+                .unwrap()
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone())),
+        );
+
+        json
+    }
+
+    #[test]
+    fn render_deserialize() {
+        let render: Render = serde_json::from_str(&sample_render_json()).unwrap();
+
+        let expected_date =
+            OffsetDateTime::from_unix_timestamp_nanos(1_700_000_000_123_i128 * 1_000_000).unwrap();
+
+        assert_eq!(render.id, 42);
+        assert_eq!(render.video_url.as_ref(), "https://example.com/video.mp4");
+        assert_eq!(render.date, expected_date);
+        assert_eq!(render.options.resolution, RenderResolution::HD720);
+        assert_eq!(
+            render.skin,
+            RenderSkinOption::Official {
+                name: "Kuro".into()
+            }
+        );
+    }
+
+    #[test]
+    fn render_list_deserialize() {
+        let json = serde_json::json!({
+            "renders": [sample_render_value()],
+            "maxRenders": 1,
+        });
+
+        let list: RenderList =
+            serde_json::from_str(&serde_json::to_string(&json).unwrap()).unwrap();
+
+        assert_eq!(list.max_renders, 1);
+        assert_eq!(list.renders.len(), 1);
+        assert_eq!(list.renders[0].id, 42);
+    }
+}

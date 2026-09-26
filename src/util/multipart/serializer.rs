@@ -283,4 +283,39 @@ mod tests {
         let bytes = String::from_utf8(form.build()).unwrap();
         println!("{bytes}");
     }
+
+    #[test]
+    fn scalars() {
+        #[derive(Serialize)]
+        struct Fields {
+            float: f64,
+            negative: i64,
+            flag: bool,
+        }
+
+        let form = Form::serialize(&Fields {
+            float: -1.5,
+            negative: -42,
+            flag: true,
+        });
+
+        let body = String::from_utf8(form.build()).unwrap();
+        let lines: Vec<&str> = body.lines().collect();
+
+        assert!(lines.contains(&"-1.5"));
+        assert!(lines.contains(&"-42"));
+        assert!(lines.contains(&"true"));
+    }
+
+    /// [`Form::serialize`] panics on `Option` fields.
+    #[test]
+    #[should_panic(expected = "not implemented")]
+    fn option_panics() {
+        #[derive(Serialize)]
+        struct Fields {
+            maybe: Option<u32>,
+        }
+
+        Form::serialize(&Fields { maybe: Some(1) });
+    }
 }

@@ -41,3 +41,40 @@ pub(crate) fn deserialize_datetime<'de, D: Deserializer<'de>>(
 ) -> Result<OffsetDateTime, D::Error> {
     d.deserialize_any(OffsetDateTimeVisitor)
 }
+
+#[cfg(test)]
+mod tests {
+    use serde::Deserialize;
+
+    use super::*;
+
+    #[derive(Deserialize)]
+    struct Wrapper {
+        #[serde(deserialize_with = "deserialize_datetime")]
+        date: OffsetDateTime,
+    }
+
+    fn expected() -> OffsetDateTime {
+        OffsetDateTime::from_unix_timestamp_nanos(1_700_000_000_123_i128 * 1_000_000).unwrap()
+    }
+
+    #[test]
+    fn from_milliseconds() {
+        let wrapper: Wrapper = serde_json::from_str(r#"{"date": 1700000000123}"#).unwrap();
+
+        assert_eq!(wrapper.date, expected());
+    }
+
+    #[test]
+    fn from_rfc3339() {
+        let wrapper: Wrapper =
+            serde_json::from_str(r#"{"date": "2023-11-14T22:13:20.123Z"}"#).unwrap();
+
+        assert_eq!(wrapper.date, expected());
+    }
+
+    #[test]
+    fn invalid() {
+        assert!(serde_json::from_str::<Wrapper>(r#"{"date": "not a date"}"#).is_err());
+    }
+}

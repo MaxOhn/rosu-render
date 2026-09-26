@@ -303,3 +303,25 @@ impl<'de> Deserialize<'de> for ErrorCode {
         d.deserialize_u8(ErrorCodeVisitor)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn api_error_display() {
+        let error: ApiError = serde_json::from_str(
+            r#"{"message": "Render failed", "errorCode": 1, "reason": "bad replay"}"#,
+        )
+        .unwrap();
+
+        assert_eq!(
+            error.to_string(),
+            "Error code Emergency stop (triggered manually): Render failed (reason: bad replay)",
+        );
+
+        let bare: ApiError = serde_json::from_str(r#"{"message": "gone"}"#).unwrap();
+
+        assert_eq!(bare.to_string(), "gone");
+    }
+}

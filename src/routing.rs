@@ -53,3 +53,35 @@ impl Display for Route {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn endpoints() {
+        for (route, path) in [
+            (Route::Render, "renders"),
+            (Route::RenderList, "renders"),
+            (Route::ServerList, "servers"),
+            (Route::ServerOnlineCount, "servers/onlinecount"),
+            (Route::SkinList, "skins"),
+            (Route::SkinCustom, "skins/custom"),
+            (Route::UserPreset, "presets/bot"),
+        ] {
+            assert_eq!(route.to_string(), path);
+            assert_eq!(
+                route.method(),
+                if route == Route::Render {
+                    Method::POST
+                } else {
+                    Method::GET
+                },
+            );
+            assert_eq!(
+                route == Route::Render,
+                matches!(route.ratelimiter(), RatelimiterKind::SendRender),
+            );
+        }
+    }
+}
