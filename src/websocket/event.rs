@@ -5,7 +5,7 @@ use crate::model::{
     CustomSkinProcessUpdate, Event, RenderAdded, RenderDone, RenderFailed, RenderProgress,
 };
 
-/// Websocket [`Event`](crate::model::Event) that has not been fully deserialized yet.
+/// Websocket [`Event`] that has not been fully deserialized yet.
 /// This lets you check if you're interested in the event and only then deserialize it.
 ///
 /// # Example
@@ -128,7 +128,7 @@ impl RawEvent {
     }
 }
 
-/// [`RenderAdded`](crate::model::RenderAdded) that has not been fully deserialized yet.
+/// [`RenderAdded`] that has not been fully deserialized yet.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RawRenderAdded {
     pub bytes: Bytes,
@@ -141,7 +141,7 @@ impl RawRenderAdded {
     }
 }
 
-/// [`RenderProgress`](crate::model::RenderProgress) that has not been fully deserialized yet.
+/// [`RenderProgress`] that has not been fully deserialized yet.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RawRenderProgress {
     pub render_id: u32,
@@ -155,7 +155,7 @@ impl RawRenderProgress {
     }
 }
 
-/// [`RenderFailed`](crate::model::RenderFailed) that has not been fully deserialized yet.
+/// [`RenderFailed`] that has not been fully deserialized yet.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RawRenderFailed {
     pub render_id: u32,
@@ -169,7 +169,7 @@ impl RawRenderFailed {
     }
 }
 
-/// [`RenderDone`](crate::model::RenderDone) that has not been fully deserialized yet.
+/// [`RenderDone`] that has not been fully deserialized yet.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RawRenderDone {
     pub render_id: u32,
@@ -183,7 +183,7 @@ impl RawRenderDone {
     }
 }
 
-/// [`CustomSkinProcessUpdate`](crate::model::CustomSkinProcessUpdate) that has not been fully deserialized yet.
+/// [`CustomSkinProcessUpdate`] that has not been fully deserialized yet.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RawCustomSkinProcessUpdate {
     pub bytes: Bytes,
