@@ -12,7 +12,7 @@ use super::Form;
 
 pub(crate) struct FormSerializer {
     pub(super) form: Form,
-    float_buf: ryu::Buffer,
+    float_buf: zmij::Buffer,
     int_buf: itoa::Buffer,
 }
 
@@ -20,7 +20,7 @@ impl FormSerializer {
     pub(crate) fn new() -> Self {
         Self {
             form: Form::new(),
-            float_buf: ryu::Buffer::new(),
+            float_buf: zmij::Buffer::new(),
             int_buf: itoa::Buffer::new(),
         }
     }
@@ -289,12 +289,14 @@ mod tests {
         #[derive(Serialize)]
         struct Fields {
             float: f64,
+            float32: f32,
             negative: i64,
             flag: bool,
         }
 
         let form = Form::serialize(&Fields {
             float: -1.5,
+            float32: 6.5_f32,
             negative: -42,
             flag: true,
         });
@@ -303,6 +305,7 @@ mod tests {
         let lines: Vec<&str> = body.lines().collect();
 
         assert!(lines.contains(&"-1.5"));
+        assert!(lines.contains(&"6.5"));
         assert!(lines.contains(&"-42"));
         assert!(lines.contains(&"true"));
     }
