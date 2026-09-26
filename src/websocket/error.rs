@@ -8,6 +8,8 @@ use crate::websocket::engineio::error::EngineIoError;
 
 #[derive(Debug, ThisError)]
 pub enum WebsocketError {
+    #[error("bot_auth authentication rejected: {message}")]
+    BotAuth { message: Box<str> },
     #[error("Failed to deserialize data={data:?}")]
     Deserialize {
         #[source]

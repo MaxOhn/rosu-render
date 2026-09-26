@@ -272,6 +272,7 @@ pub struct RenderOptions {
     /// used with bots in their issou.best account.
     #[serde(
         rename = "discordUserId",
+        default,
         skip_serializing_if = "Option::is_none",
         with = "maybe_u64_as_str"
     )]
@@ -587,6 +588,17 @@ mod tests {
                 name: "Kuro".into()
             }
         );
+    }
+
+    #[test]
+    fn render_deserialize_without_discord_user_id() {
+        let mut json = sample_render_value();
+
+        json.as_object_mut().unwrap().remove("discordUserId");
+
+        let render: Render = serde_json::from_str(&serde_json::to_string(&json).unwrap()).unwrap();
+
+        assert_eq!(render.options.discord_user_id, None);
     }
 
     #[test]

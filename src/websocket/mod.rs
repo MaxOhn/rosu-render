@@ -4,6 +4,8 @@
     feature = "rustls-webpki-roots"
 ))]
 
+use bytes::Bytes;
+
 use crate::WebsocketError;
 
 use self::{
@@ -28,6 +30,9 @@ pub mod event;
 /// Await events with [`OrdrWebsocket::next_event`].
 ///
 /// To gracefully shut the connection down, use [`OrdrWebsocket::disconnect`].
+///
+/// Verified bots that should also receive events about their private and
+/// unlisted renders must call [`OrdrWebsocket::authenticate`] after connecting.
 pub struct OrdrWebsocket {
     engineio: EngineIo,
     reconnect: Reconnect,
@@ -80,6 +85,56 @@ impl OrdrWebsocket {
         }
     }
 
+    /// Authenticate this connection as a verified bot.
+    ///
+    /// Emits the `bot_auth` event with the bot's API key and waits for the
+    /// server's reply on the same event. Once authenticated, events about the
+    /// bot's private and unlisted renders are included in the stream.
+    ///
+    /// Like [`OrdrWebsocket::next_event`], this can block indefinitely while
+    /// the connection is alive. Events that arrive before the authentication
+    /// reply are dropped.
+    #[expect(clippy::missing_panics_doc, reason = "serializing a &str cannot fail")]
+    pub async fn authenticate(&mut self, key: &str) -> Result<(), WebsocketError> {
+        let payload = serde_json::to_string(&["bot_auth", key])
+            .expect("a &str always serializes to a JSON string");
+
+        self.emit(Packet::new_event(Bytes::from(payload))).await?;
+
+        loop {
+            let Some(bytes) = self.engineio.next_message().await? else {
+                self.reconnect().await?;
+
+                continue;
+            };
+
+            let packet = Packet::from_bytes(&bytes)?;
+
+            match packet.kind {
+                PacketKind::Event => {
+                    // The server replies on the same `bot_auth` event, other
+                    // events arriving during authentication are dropped.
+                    let Some(data) = packet.data else {
+                        continue;
+                    };
+
+                    let Some(message) = bot_auth_message(&data) else {
+                        continue;
+                    };
+
+                    if message.starts_with("Authentication successful") {
+                        return Ok(());
+                    }
+
+                    return Err(WebsocketError::BotAuth { message });
+                }
+                PacketKind::Ack => self.ack(&packet).await?,
+                PacketKind::Connect => {}
+                PacketKind::Disconnect | PacketKind::ConnectError => self.reconnect().await?,
+            }
+        }
+    }
+
     /// Gracefully disconnect from the websocket.
     pub async fn disconnect(self) -> Result<(), WebsocketError> {
         self.engineio
@@ -128,5 +183,59 @@ impl OrdrWebsocket {
         let Some(id) = packet.id else { return Ok(()) };
 
         self.emit(Packet::new_ack(id)).await
+    }
+}
+
+/// The message of a `bot_auth` reply, if the event data is one.
+///
+/// The server answers the `bot_auth` event with
+/// `["bot_auth","Authentication successful for <bot name>"]`.
+fn bot_auth_message(data: &[u8]) -> Option<Box<str>> {
+    let (name, message) = serde_json::from_slice::<(String, Box<str>)>(data).ok()?;
+
+    (name == "bot_auth").then_some(message)
+}
+
+#[cfg(test)]
+mod tests {
+    use bytes::Bytes;
+
+    use super::{bot_auth_message, Packet};
+
+    #[test]
+    fn bot_auth_emit_frame() {
+        let payload = serde_json::to_string(&["bot_auth", "secret-key"]).unwrap();
+
+        let frame = Packet::new_event(Bytes::from(payload)).to_bytes();
+
+        assert_eq!(frame.as_ref(), &br#"2["bot_auth","secret-key"]"#[..]);
+    }
+
+    #[test]
+    fn bot_auth_reply_frame() {
+        let frame = br#"2["bot_auth","Authentication successful for bathbot"]"#;
+
+        let packet = Packet::from_bytes(&Bytes::from_static(frame)).unwrap();
+        let data = packet.data.unwrap();
+
+        assert_eq!(
+            bot_auth_message(&data),
+            Some("Authentication successful for bathbot".into()),
+        );
+    }
+
+    #[test]
+    fn bot_auth_failure_message_is_captured() {
+        assert_eq!(
+            bot_auth_message(br#"["bot_auth","Invalid API key"]"#),
+            Some("Invalid API key".into()),
+        );
+    }
+
+    #[test]
+    fn bot_auth_ignores_other_events() {
+        let data = br#"["render_done_json",{"renderID":1}]"#;
+
+        assert_eq!(bot_auth_message(data), None);
     }
 }

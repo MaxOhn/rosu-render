@@ -56,6 +56,14 @@ impl Packet {
         }
     }
 
+    pub(super) fn new_event(data: Bytes) -> Self {
+        Self {
+            kind: PacketKind::Event,
+            data: Some(data),
+            id: None,
+        }
+    }
+
     pub(super) fn new_ack(id: i32) -> Self {
         Self {
             kind: PacketKind::Ack,

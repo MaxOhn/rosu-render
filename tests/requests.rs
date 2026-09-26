@@ -67,6 +67,31 @@ async fn dyn_link_invalid_id() {
 }
 
 #[tokio::test]
+async fn bot_auth() {
+    let key = match std::env::var("ORDR_KEY") {
+        Ok(key) => key,
+        Err(_) => {
+            eprintln!("skipping bot_auth: ORDR_KEY is not set");
+            return;
+        }
+    };
+
+    let mut websocket = OrdrWebsocket::connect().await.unwrap();
+
+    match tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        websocket.authenticate(&key),
+    )
+    .await
+    {
+        Ok(result) => result.unwrap(),
+        Err(_) => panic!("Timed out awaiting bot_auth reply"),
+    }
+
+    websocket.disconnect().await.unwrap();
+}
+
+#[tokio::test]
 async fn dyn_link() {
     let key = match std::env::var("ORDR_KEY") {
         Ok(key) => key,
@@ -80,7 +105,14 @@ async fn dyn_link() {
         .build();
 
     let list = client.render_list().await.unwrap();
-    let render_id = list.renders[0].id;
+
+    // The newest render is often still rendering and has no dynlink yet.
+    let render_id = list
+        .renders
+        .iter()
+        .find(|r| r.progress.as_ref() == "Done.")
+        .expect("no completed render in the global feed")
+        .id;
 
     let link = client.dyn_link(render_id).await.unwrap();
     assert!(link.url.starts_with("http"));
