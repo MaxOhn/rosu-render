@@ -32,10 +32,12 @@ pub mod event;
 /// To gracefully shut the connection down, use [`OrdrWebsocket::disconnect`].
 ///
 /// Verified bots that should also receive events about their private and
-/// unlisted renders must call [`OrdrWebsocket::authenticate`] after connecting.
+/// unlisted renders must call [`OrdrWebsocket::authenticate`] after
+/// connecting.
 pub struct OrdrWebsocket {
     engineio: EngineIo,
     reconnect: Reconnect,
+    auth: Option<Box<str>>,
 }
 
 impl OrdrWebsocket {
@@ -46,6 +48,7 @@ impl OrdrWebsocket {
         let mut this = Self {
             engineio,
             reconnect: Reconnect::default(),
+            auth: None,
         };
 
         this.open().await?;
@@ -80,6 +83,12 @@ impl OrdrWebsocket {
             }
 
             if let Some(data) = packet.data {
+                // The server's `bot_auth` reply is not a render event; the
+                // authentication is handled internally
+                if data.starts_with(b"[\"bot_auth\"") {
+                    continue;
+                }
+
                 return RawEvent::from_bytes(data);
             }
         }
@@ -94,12 +103,10 @@ impl OrdrWebsocket {
     /// Like [`OrdrWebsocket::next_event`], this can block indefinitely while
     /// the connection is alive. Events that arrive before the authentication
     /// reply are dropped.
-    #[expect(clippy::missing_panics_doc, reason = "serializing a &str cannot fail")]
     pub async fn authenticate(&mut self, key: &str) -> Result<(), WebsocketError> {
-        let payload = serde_json::to_string(&["bot_auth", key])
-            .expect("a &str always serializes to a JSON string");
+        self.auth = Some(key.into());
 
-        self.emit(Packet::new_event(Bytes::from(payload))).await?;
+        self.emit_auth(key).await?;
 
         loop {
             let Some(bytes) = self.engineio.next_message().await? else {
@@ -154,7 +161,18 @@ impl OrdrWebsocket {
                 Ok(()) => {
                     self.reconnect.reset();
 
-                    return Ok(());
+                    // The server only keeps `bot_auth` per connection, so a
+                    // reconnected one has to authenticate again. The key was
+                    // already verified by the initial
+                    // [`OrdrWebsocket::authenticate`], so the reply here is
+                    // not awaited.
+                    match self.auth.clone() {
+                        Some(key) => match self.emit_auth(&key).await {
+                            Ok(()) => return Ok(()),
+                            Err(err) => err,
+                        },
+                        None => return Ok(()),
+                    }
                 }
                 Err(err) => err,
             },
@@ -164,6 +182,13 @@ impl OrdrWebsocket {
         self.reconnect.backoff();
 
         Err(err)
+    }
+
+    async fn emit_auth(&mut self, key: &str) -> Result<(), WebsocketError> {
+        let payload = serde_json::to_string(&["bot_auth", key])
+            .expect("a &str always serializes to a JSON string");
+
+        self.emit(Packet::new_event(Bytes::from(payload))).await
     }
 
     async fn emit(&mut self, packet: Packet) -> Result<(), WebsocketError> {

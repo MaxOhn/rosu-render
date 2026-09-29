@@ -37,6 +37,9 @@ pub struct Render {
     pub date: OffsetDateTime,
     pub username: Box<str>,
     pub progress: Box<str>,
+    /// The o!rdr error code the render failed with; 0 if it did not fail.
+    #[serde(rename = "errorCode")]
+    pub error_code: u8,
     pub renderer: Box<str>,
     pub description: Box<str>,
     pub title: Box<str>,
@@ -532,6 +535,7 @@ mod tests {
             "date": 1_700_000_000_123_i64,
             "username": "username",
             "progress": "100",
+            "errorCode": 0,
             "renderer": "renderer",
             "description": "description",
             "title": "title",
