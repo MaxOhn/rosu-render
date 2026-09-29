@@ -1,4 +1,10 @@
-# v0.5.2 (2026-09-26)
+# v0.5.3 (2026-09-29)
+
+- Fixed `OrdrWebsocket` re-authentication on reconnect
+- Fixed `OrdrWebsocket::next_event` returning `InvalidEvent` for the server's `bot_auth` reply
+- Added the field `Render.error_code` with the o!rdr error code the render failed with, 0 if it did not fail
+
+## v0.5.2 (2026-09-26)
 
 - Fixed `Render` deserialization failing when the server omits `discordUserId` from a render
 - Added the endpoint `OrdrClient::dyn_link` to generate a dynlink URL for a render
